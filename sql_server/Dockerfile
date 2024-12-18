@@ -1,2 +1,2 @@
-FROM mysql:8.0.23
+FROM mysql:8
 COPY root.my.cnf /root/.my.cnf
