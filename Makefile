@@ -51,3 +51,11 @@ save: build
 
 load:
 	docker load -i scaleout.tar
+
+benchmark: clean
+	truncate -s0 scaleout/nodelist
+	env SLURM_BENCHMARK=1 bash buildout.sh > ./docker-compose.yml
+	env BUILDKIT_PROGRESS=plain COMPOSE_HTTP_TIMEOUT=3000 $(DC) $(BUILD)
+	$(DC) up --remove-orphans -d
+	$(DC) exec $(HOST) /usr/bin/run_utmost.sh
+

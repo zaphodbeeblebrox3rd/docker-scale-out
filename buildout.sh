@@ -69,7 +69,19 @@ SUBNET=${SUBNET:-"10.11"}
 SUBNET6=${SUBNET6:-"2001:db8:1:1::"}
 NODELIST=${NODELIST:-"scaleout/nodelist"}
 
-if [ ! -s "$NODELIST" ]
+if [ $SLURM_BENCHMARK ]
+then
+MYSQL_VOLUMES="
+      - type: tmpfs
+        target: /var/lib/mysql
+"
+NODES_COUNT=100
+else
+MYSQL_VOLUMES=""
+NODES_COUNT=9
+fi
+
+if [ ! -s "$NODELIST" -o $SLURM_BENCHMARK ]
 then
 	if [ ! -z "$FEDERATION" ]
 	then
@@ -77,8 +89,8 @@ then
 		[ -f "$NODELIST" ] && unlink "$NODELIST" 2>&1 >/dev/null
 		for c in $FEDERATION
 		do
-			#generate list of 10 nodes per cluster
-			seq 0 9 | while read i
+			#generate list nodes per cluster
+			seq 0 $NODES_COUNT | while read i
 			do
 				echo "$(printf "$c-node%02d" $i) $c ${SUBNET}.${c_sub}.$((${i} + 10)) ${SUBNET6}${c_sub}:$((${i} + 10))"
 			done >> $NODELIST
@@ -87,7 +99,7 @@ then
 		done
 	else
 		#generate list of 10 nodes
-		seq 0 9 | while read i
+		seq 0 $NODES_COUNT | while read i
 		do
 			echo "$(printf "node%02d" $i) cluster ${SUBNET}.5.$((${i} + 10)) ${SUBNET6}5:$((${i} + 10))"
 		done > $NODELIST
@@ -278,6 +290,7 @@ services:
       - SUBNET6="${SUBNET6}"
     volumes:
       - /dev/log:/dev/log
+$MYSQL_VOLUMES
     hostname: db
 $LOGGING
     networks:
