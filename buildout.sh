@@ -69,7 +69,7 @@ SUBNET=${SUBNET:-"10.11"}
 SUBNET6=${SUBNET6:-"2001:db8:1:1::"}
 NODELIST=${NODELIST:-"scaleout/nodelist"}
 
-if [ $SLURM_BENCHMARK ]
+if [ ! -z "$SLURM_BENCHMARK" ]
 then
 MYSQL_VOLUMES="
       - type: tmpfs
@@ -81,7 +81,7 @@ MYSQL_VOLUMES=""
 NODES_COUNT=9
 fi
 
-if [ ! -s "$NODELIST" -o $SLURM_BENCHMARK ]
+if [ ! -s "$NODELIST" -o "$SLURM_BENCHMARK" ]
 then
 	if [ ! -z "$FEDERATION" ]
 	then
