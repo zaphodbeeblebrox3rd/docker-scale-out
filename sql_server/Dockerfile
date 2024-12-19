@@ -1,2 +1,3 @@
-FROM mysql:8.0.23
-COPY root.my.cnf /root/.my.cnf
+FROM mysql:8
+COPY my.cnf /etc/mysql/conf.d/scaleout.cnf
+COPY my.cnf /root/.my.cnf
