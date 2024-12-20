@@ -232,7 +232,7 @@ RUN echo -e '\nNoHostAuthenticationForLocalhost=yes\nStrictHostKeyChecking=no' >
 RUN awk '{print "*", $1, $2}' </etc/ssh/ssh_host_ecdsa_key.pub >> /etc/ssh/ssh_known_hosts
 
 #add pam module as first module
-RUN echo -e '+:wheel:ALL\n+:slurm:ALL\n-:ALL:ALL' > /etc/security/access.conf && \
+RUN echo -e '+:root:ALL\n+:wheel:ALL\n+:slurm:ALL\n-:ALL:ALL' > /etc/security/access.conf && \
 	chmod 0700 /etc/security/access.conf && \
 	echo -e '#%PAM-1.0\naccount    sufficient      pam_access.so\naccount    sufficient   pam_slurm_adopt.so\n' | \
 	cat - /etc/pam.d/sshd > /etc/pam.d/sshd2 && \
