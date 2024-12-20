@@ -68,9 +68,15 @@ RUN git config --global user.email "you@example.com" && \
 	git config --global user.name "scale out" && \
 	git fetch --depth 1 origin ${SLURM_RELEASE} && \
 	git checkout FETCH_HEAD
-RUN ./configure --enable-slurmrestd --enable-multiple-slurmd --enable-memory-leak-debug --enable-developer --disable-optimizations --with-munge=/usr/local/ --prefix=/usr/local \
-	--sharedstatedir=/run/slurm/ --with-pmix=/usr/local \
-	--enable-pam --sysconfdir=/etc/slurm --with-hdf5=/usr/local/bin/h5cc >/dev/null && \
+ARG SLURM_BENCHMARK
+RUN if [ "${SLURM_BENCHMARK}" ]; then \
+		CONF_ARGS=""; \
+	else \
+		CONF_ARGS="--enable-memory-leak-debug --enable-developer --disable-optimizations --with-hdf5=/usr/local/bin/h5cc"; \
+	fi; \
+	./configure --enable-slurmrestd --enable-multiple-slurmd $CONF_ARGS --with-munge=/usr/local/ --prefix=/usr/local \
+		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local \
+		--enable-pam --sysconfdir=/etc/slurm >/dev/null && \
 	make -j >/dev/null && make install >/dev/null && make -j install-contrib >/dev/null && \
 	cd contribs && make install && \
 	ln -nfs /usr/local/src/slurm/contribs/slurm_completion_help/slurm_completion.sh /etc/bash_completion.d/slurm_completion.sh

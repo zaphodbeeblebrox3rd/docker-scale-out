@@ -76,9 +76,13 @@ MYSQL_VOLUMES="
         target: /var/lib/mysql
 "
 NODES_COUNT=100
+BUILD_ARGS="
+        SLURM_BENCHMARK: 1
+"
 else
 MYSQL_VOLUMES=""
 NODES_COUNT=9
+BUILD_ARGS=""
 fi
 
 if [ ! -s "$NODELIST" -o "$SLURM_BENCHMARK" ]
@@ -307,6 +311,7 @@ $HOSTLIST
         SUBNET: "$SUBNET"
         SUBNET6: "$SUBNET6"
         CACHE_DESTROYER: "$CACHE_DESTROYER"
+${BUILD_ARGS}
       network: host
     image: scaleout:latest
     environment:
