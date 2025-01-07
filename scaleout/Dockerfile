@@ -316,6 +316,7 @@ RUN systemctl enable slurmdbd slurmctld slurmd slurmrestd postfix slurmd.slice &
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
 RUN touch "/tmp/$CACHE_DESTROYER"
+COPY benchmark.d /root/benchmark.d
 COPY patch.d /usr/local/src/slurm/patch.d
 RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 	sort -z > /usr/local/src/slurm/patch.list && \
