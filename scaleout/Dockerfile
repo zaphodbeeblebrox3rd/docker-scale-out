@@ -68,9 +68,15 @@ RUN git config --global user.email "you@example.com" && \
 	git config --global user.name "scale out" && \
 	git fetch --depth 1 origin ${SLURM_RELEASE} && \
 	git checkout FETCH_HEAD
-RUN ./configure --enable-slurmrestd --enable-multiple-slurmd --enable-memory-leak-debug --enable-developer --disable-optimizations --with-munge=/usr/local/ --prefix=/usr/local \
-	--sharedstatedir=/run/slurm/ --with-pmix=/usr/local \
-	--enable-pam --sysconfdir=/etc/slurm --with-hdf5=/usr/local/bin/h5cc >/dev/null && \
+ARG SLURM_BENCHMARK
+RUN if [ "${SLURM_BENCHMARK}" ]; then \
+		CONF_ARGS=""; \
+	else \
+		CONF_ARGS="--enable-memory-leak-debug --enable-developer --disable-optimizations --with-hdf5=/usr/local/bin/h5cc"; \
+	fi; \
+	./configure --enable-slurmrestd --enable-multiple-slurmd $CONF_ARGS --with-munge=/usr/local/ --prefix=/usr/local \
+		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local \
+		--enable-pam --sysconfdir=/etc/slurm >/dev/null && \
 	make -j >/dev/null && make install >/dev/null && make -j install-contrib >/dev/null && \
 	cd contribs && make install && \
 	ln -nfs /usr/local/src/slurm/contribs/slurm_completion_help/slurm_completion.sh /etc/bash_completion.d/slurm_completion.sh
@@ -310,6 +316,7 @@ RUN systemctl enable slurmdbd slurmctld slurmd slurmrestd postfix slurmd.slice &
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
 RUN touch "/tmp/$CACHE_DESTROYER"
+COPY benchmark.d /root/benchmark.d
 COPY patch.d /usr/local/src/slurm/patch.d
 RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 	sort -z > /usr/local/src/slurm/patch.list && \

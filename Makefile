@@ -57,5 +57,5 @@ benchmark: clean
 	env SLURM_BENCHMARK=1 bash buildout.sh > ./docker-compose.yml
 	env BUILDKIT_PROGRESS=plain COMPOSE_HTTP_TIMEOUT=3000 $(DC) $(BUILD)
 	$(DC) up --remove-orphans -d
-	$(DC) exec $(HOST) /usr/bin/run_utmost.sh
+	$(DC) exec $(HOST) bash -c '(find /root/benchmark.d -type f -name \*.sh | xargs -i echo bash "{} &"; echo wait) | bash -x'
 
