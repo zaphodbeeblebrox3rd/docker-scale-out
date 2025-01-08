@@ -5,7 +5,6 @@ unset MAC
 #only mount cgroups with v1
 #https://github.com/jepsen-io/jepsen/issues/532#issuecomment-1128067136
 [ ! -f /sys/fs/cgroup/cgroup.controllers ] && SYSDFSMOUNTS="
-      - /dev/log:/dev/log
       - /etc/localtime:/etc/localtime:ro
       - /run/
       - /run/lock/
@@ -15,7 +14,6 @@ unset MAC
       - /tmp/
       - /var/lib/journal
 " || SYSDFSMOUNTS="
-      - /dev/log:/dev/log
       - /etc/localtime:/etc/localtime:ro
       - /run/
       - /run/lock/
@@ -72,6 +70,7 @@ NODELIST=${NODELIST:-"scaleout/nodelist"}
 if [ ! -z "$SLURM_BENCHMARK" ]
 then
 MYSQL_VOLUMES="
+    volumes:
       - type: tmpfs
         target: /var/lib/mysql
 "
@@ -292,8 +291,6 @@ services:
       - MYSQL_DATABASE=slurm_acct_db
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
-    volumes:
-      - /dev/log:/dev/log
 $MYSQL_VOLUMES
     hostname: db
 $LOGGING
