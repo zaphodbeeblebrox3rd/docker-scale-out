@@ -69,7 +69,7 @@ RUN git config --global user.email "you@example.com" && \
 	git fetch --depth 1 origin ${SLURM_RELEASE} && \
 	git checkout FETCH_HEAD
 ARG SLURM_BENCHMARK
-RUN if [ "${SLURM_BENCHMARK}" ]; then \
+RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 		CONF_ARGS=""; \
 	else \
 		CONF_ARGS="--enable-memory-leak-debug --enable-developer --disable-optimizations --with-hdf5=/usr/local/bin/h5cc"; \
@@ -316,7 +316,11 @@ RUN systemctl enable slurmdbd slurmctld slurmd slurmrestd postfix slurmd.slice &
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
 RUN touch "/tmp/$CACHE_DESTROYER"
-COPY benchmark.d /root/benchmark.d
+ARG SLURM_BENCHMARK
+COPY benchmark /root/benchmark
+RUN [ ! -z "${SLURM_BENCHMARK}" ] && \
+	find /root/benchmark/run.d/ -type f -name '${SLURM_BENCHMARK}\*.sh' -print0 | \
+	xargs -0 -i bash {}
 COPY patch.d /usr/local/src/slurm/patch.d
 RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 	sort -z > /usr/local/src/slurm/patch.list && \
