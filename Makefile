@@ -52,10 +52,11 @@ save: build
 load:
 	docker load -i scaleout.tar
 
-benchmark: clean
+benchmark-%: clean
+	$(eval SLURM_BENCHMARK := $(subst benchmark-,,$@))
 	truncate -s0 scaleout/nodelist
-	env SLURM_BENCHMARK=1 bash buildout.sh > ./docker-compose.yml
+	env SLURM_BENCHMARK=$(SLURM_BENCHMARK) bash buildout.sh > ./docker-compose.yml
 	env BUILDKIT_PROGRESS=plain COMPOSE_HTTP_TIMEOUT=3000 $(DC) $(BUILD)
 	$(DC) up --remove-orphans -d
-	$(DC) exec $(HOST) bash -c '(find /root/benchmark.d -type f -name \*.sh | xargs -i echo bash "{} &"; echo wait) | bash -x'
+	$(DC) exec $(HOST) bash -c '(find /root/benchmark/run.d/ -type f -name $(SLURM_BENCHMARK)\*.sh | xargs -i echo bash "{} &"; echo wait) | bash -x'
 
