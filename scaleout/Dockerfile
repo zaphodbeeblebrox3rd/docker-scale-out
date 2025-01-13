@@ -318,9 +318,10 @@ RUN systemctl enable slurmdbd slurmctld slurmd slurmrestd postfix slurmd.slice &
 RUN touch "/tmp/$CACHE_DESTROYER"
 ARG SLURM_BENCHMARK
 COPY benchmark /root/benchmark
-RUN [ ! -z "${SLURM_BENCHMARK}" ] && \
+RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 	find /root/benchmark/run.d/ -type f -name '${SLURM_BENCHMARK}\*.sh' -print0 | \
-	xargs -0 -i bash {}
+	xargs -0 -i bash {}; \
+	fi
 COPY patch.d /usr/local/src/slurm/patch.d
 RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 	sort -z > /usr/local/src/slurm/patch.list && \
