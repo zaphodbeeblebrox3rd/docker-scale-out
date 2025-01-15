@@ -13,7 +13,7 @@ default: ./docker-compose.yml run
 	bash buildout.sh > ./docker-compose.yml
 
 build: ./docker-compose.yml
-	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --progress=plain $(BUILD)
+	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 
 stop:
 	$(DC) down
@@ -56,7 +56,7 @@ benchmark-%: clean
 	$(eval SLURM_BENCHMARK := $(subst benchmark-,,$@))
 	truncate -s0 scaleout/nodelist
 	env SLURM_BENCHMARK=$(SLURM_BENCHMARK) bash buildout.sh > ./docker-compose.yml
-	env BUILDKIT_PROGRESS=plain COMPOSE_HTTP_TIMEOUT=3000 $(DC) $(BUILD)
+	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 	$(DC) up --remove-orphans -d
 	$(DC) exec $(HOST) bash -c '(find /root/benchmark/run.d/ -type f -name $(SLURM_BENCHMARK)\*.sh | xargs -i echo bash "{} &"; echo wait) | bash -x'
 
