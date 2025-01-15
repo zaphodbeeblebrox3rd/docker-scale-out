@@ -55,12 +55,17 @@ then
     ports:
       - 8082:80
 "
+	KEYCLOAK_PORTS="
+    ports:
+      - 8083:8080
+"
 else
 	ES_PORTS=
 	KIBANA_PORTS=
 	PROXY_PORTS=
 	GRAFANA_PORTS=
 	XDMOD_PORTS=
+	KEYCLOAK_PORTS=
 fi
 
 SUBNET=${SUBNET:-"10.11"}
@@ -143,6 +148,8 @@ HOSTLIST="    extra_hosts:
       - \"open-ondemand:${SUBNET6}1:21\"
       - \"xdmod:${SUBNET}.1.22\"
       - \"xdmod:${SUBNET6}1:22\"
+      - \"keycloak:${SUBNET}.1.23\"
+      - \"keycloak:${SUBNET6}1:23\"
 "
 
 if [ ! -z "$FEDERATION" ]
@@ -367,6 +374,7 @@ $CLOUD_MOUNTS
 $LOGGING
     depends_on:
       - "slurmdbd"
+      - "keycloak"
 $HOSTLIST
   ${c}-mgmtnode2:
     image: scaleout:latest
@@ -781,6 +789,21 @@ ${PROXY_PORTS}
       - "rest"
 $HOSTLIST
 $XDMOD
+  keycloak:
+    image: keycloak:latest
+    build:
+      context: ./keycloak
+      network: host
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=password
+    hostname: keycloak
+$LOGGING
+    networks:
+      internal:
+        ipv4_address: "${SUBNET}.1.23"
+        ipv6_address: "${SUBNET6}1:23"
+$KEYCLOAK_PORTS
 EOF
 
 exit 0
