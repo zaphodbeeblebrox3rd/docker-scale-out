@@ -135,6 +135,11 @@ Proxy:
   * Auth REST API http://localhost:8080/auth
   * Query REST API http://localhost:8080/slurm/
 
+Keycloak
+  * Admin Console: http://localhost:8083/
+  * User: admin
+  * Password: password
+
 ## Multiple Instances
 Each cluster must have a unique class B subnet.
 

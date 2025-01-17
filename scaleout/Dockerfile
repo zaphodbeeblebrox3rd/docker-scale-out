@@ -266,6 +266,7 @@ RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /etc/my.cnf && \
 	ln -s /etc/my.cnf /usr/local/etc/my.cnf
 COPY mysql /usr/local/bin/mysql
 COPY slurmctld.startup.sh /usr/local/bin/slurmctld.startup.sh
+RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /usr/local/bin/slurmctld.startup.sh
 COPY slurmctld.startup2.sh /usr/local/bin/slurmctld.startup2.sh
 COPY slurmd.startup.sh /usr/local/bin/slurmd.startup.sh
 COPY slurmd.check.sh /usr/local/bin/slurmd.check.sh
@@ -322,6 +323,9 @@ RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 	find /root/benchmark/run.d/ -type f -name '${SLURM_BENCHMARK}\*.sh' -print0 | \
 	xargs -0 -i bash {}; \
 	fi
+COPY get_keycloak_jwt.sh /usr/bin/get_keycloak_jwt.sh
+ARG SUBNET
+RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /usr/bin/get_keycloak_jwt.sh
 COPY patch.d /usr/local/src/slurm/patch.d
 RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 	sort -z > /usr/local/src/slurm/patch.list && \
