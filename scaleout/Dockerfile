@@ -97,9 +97,10 @@ RUN /usr/sbin/groupadd -r munge
 RUN /usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge
 RUN mkdir -m 0700 -p /etc/munge/ && \
 	mkdir -p -m 0700 /var/log/munge && chown munge:munge -R /var/log/munge /var/run/munge/
-RUN dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key
-RUN chown slurm:slurm /etc/slurm/jwt.key
-RUN chmod 0600 /etc/slurm/jwt.key
+RUN dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
+	touch /etc/slurm/jwks.json && \
+	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
+	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
 RUN dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key
 RUN touch /etc/munge/munge.seed
 RUN chown munge:munge -R /etc/munge
