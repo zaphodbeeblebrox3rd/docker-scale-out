@@ -285,8 +285,7 @@ RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.servi
 	chmod 0755 /usr/local/bin/login.startup.sh && \
 	chmod 0755 /usr/local/bin/slurmrestd.startup.sh && \
 	mkdir -p /auth && chown -R slurm:slurm /auth && \
-	chmod 0755 /auth && \
-	chown -R slurm:slurm /usr/local/src/
+	chmod 0755 /auth
 
 COPY globals.local /usr/local/src/slurm/testsuite/expect/globals.local
 COPY testsuite.conf /usr/local/src/slurm/testsuite/testsuite.conf
