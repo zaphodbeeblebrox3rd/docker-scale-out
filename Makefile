@@ -63,3 +63,7 @@ benchmark-%: clean-nodelist clean
 	$(DC) exec $(HOST) bash -c '(find /root/benchmark/run.d/ -type f -name $(SLURM_BENCHMARK)\*.sh | xargs -i echo bash "{} &"; echo wait) | bash -x'
 	$(DC) down
 
+test-build: clean-nodelist clean build
+	$(DC) exec $(HOST) bash /usr/local/bin/test-build.sh
+	test -f ./docker-compose.yml && ($(DC) kill -s SIGKILL; $(DC) down --remove-orphans -t1 -v; unlink ./docker-compose.yml) || true
+	[ -f cloud_socket ] && unlink cloud_socket || true

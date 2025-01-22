@@ -274,6 +274,7 @@ COPY slurmd.check.sh /usr/local/bin/slurmd.check.sh
 COPY login.startup.sh /usr/local/bin/login.startup.sh
 COPY slurmrestd.startup.sh /usr/local/bin/slurmrestd.startup.sh
 COPY slurmrestd.env /etc/sysconfig/slurmrestd
+COPY test-build.sh /usr/local/bin/test-build.sh
 RUN sed -e "s/{SUBNET6}/${SUBNET6}/" -e "s/{SUBNET}/${SUBNET}/" \
 	-i /etc/sysconfig/slurmrestd && \
 	chmod 0755 /usr/local/bin/*.sh
