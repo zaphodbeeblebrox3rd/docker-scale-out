@@ -23,6 +23,9 @@ set_nocache:
 
 nocache: set_nocache build
 
+clean-nodelist:
+	truncate -s0 scaleout/nodelist
+
 clean:
 	test -f ./docker-compose.yml && ($(DC) kill -s SIGKILL; $(DC) down --remove-orphans -t1 -v; unlink ./docker-compose.yml) || true
 	[ -f cloud_socket ] && unlink cloud_socket || true
@@ -52,9 +55,8 @@ save: build
 load:
 	docker load -i scaleout.tar
 
-benchmark-%: clean
+benchmark-%: clean-nodelist clean
 	$(eval SLURM_BENCHMARK := $(subst benchmark-,,$@))
-	truncate -s0 scaleout/nodelist
 	env SLURM_BENCHMARK=$(SLURM_BENCHMARK) bash buildout.sh > ./docker-compose.yml
 	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 	$(DC) up --remove-orphans -d
