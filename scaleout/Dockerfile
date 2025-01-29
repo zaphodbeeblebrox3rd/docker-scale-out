@@ -26,7 +26,8 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	libassuan-devel dbus-devel bash-completion tzdata-java \
 	python3-setuptools-wheel python3-virtualenv python3-urllib3 \
 	python3-six python3-requests python3-pexpect \
-	python3.11 python3.11-pip python3.11-pytest python3.11-requests
+	python3.11 python3.11-pip python3.11-pytest python3.11-requests \
+	bc
 RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	alternatives --set python3 /usr/bin/python3.11 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest-3 && \
@@ -97,9 +98,10 @@ RUN /usr/sbin/groupadd -r munge
 RUN /usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge
 RUN mkdir -m 0700 -p /etc/munge/ && \
 	mkdir -p -m 0700 /var/log/munge && chown munge:munge -R /var/log/munge /var/run/munge/
-RUN dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key
-RUN chown slurm:slurm /etc/slurm/jwt.key
-RUN chmod 0600 /etc/slurm/jwt.key
+RUN dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
+	touch /etc/slurm/jwks.json && \
+	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
+	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
 RUN dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key
 RUN touch /etc/munge/munge.seed
 RUN chown munge:munge -R /etc/munge
@@ -273,6 +275,7 @@ COPY slurmd.check.sh /usr/local/bin/slurmd.check.sh
 COPY login.startup.sh /usr/local/bin/login.startup.sh
 COPY slurmrestd.startup.sh /usr/local/bin/slurmrestd.startup.sh
 COPY slurmrestd.env /etc/sysconfig/slurmrestd
+COPY test-build.sh /usr/local/bin/test-build.sh
 RUN sed -e "s/{SUBNET6}/${SUBNET6}/" -e "s/{SUBNET}/${SUBNET}/" \
 	-i /etc/sysconfig/slurmrestd && \
 	chmod 0755 /usr/local/bin/*.sh
@@ -285,8 +288,7 @@ RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.servi
 	chmod 0755 /usr/local/bin/login.startup.sh && \
 	chmod 0755 /usr/local/bin/slurmrestd.startup.sh && \
 	mkdir -p /auth && chown -R slurm:slurm /auth && \
-	chmod 0755 /auth && \
-	chown -R slurm:slurm /usr/local/src/
+	chmod 0755 /auth
 
 COPY globals.local /usr/local/src/slurm/testsuite/expect/globals.local
 COPY testsuite.conf /usr/local/src/slurm/testsuite/testsuite.conf

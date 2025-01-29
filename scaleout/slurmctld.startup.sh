@@ -92,7 +92,11 @@ then
 	#sacctmgr -vi add user pebbles Account=bedrock DefaultAccount=bedrock admin=admin
 
 	#Grab JWKS from keycloak
-	curl "http://{SUBNET}.1.23:8080/realms/master/protocol/openid-connect/certs" > /etc/slurm/jwks.json
+	while [ ! -s /etc/slurm/jwks.json ]
+	do
+		curl "http://{SUBNET}.1.23:8080/realms/master/protocol/openid-connect/certs" > /etc/slurm/jwks.json
+	done
+
 else
 	#wait for primary mgt node to be done starting up
 	while [ [ ! -s /etc/slurm/nodes.conf ] -o [ "$(scontrol --json ping | jq -r '.pings[0].pinged')" = "UP" ] ]

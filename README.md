@@ -301,6 +301,13 @@ make save
 make load
 ```
 
+## To test building
+
+```
+git submodule update --init --force --remote --recursive
+make test-build
+```
+
 ## How to trigger manual xdmod data dump:
 
 ```
