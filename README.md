@@ -136,7 +136,7 @@ Proxy:
   * Query REST API http://localhost:8080/slurm/
 
 Keycloak
-  * Admin Console: http://localhost:8083/
+  * Admin Console: http://127.0.0.1:8083/
   * User: admin
   * Password: password
 
