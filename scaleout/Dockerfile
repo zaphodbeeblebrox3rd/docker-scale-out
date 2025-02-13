@@ -27,7 +27,7 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	python3-setuptools-wheel python3-virtualenv python3-urllib3 \
 	python3-six python3-requests python3-pexpect \
 	python3.11 python3.11-pip python3.11-pytest python3.11-requests \
-	bc
+	bc emacs nano
 RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	alternatives --set python3 /usr/bin/python3.11 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest-3 && \
