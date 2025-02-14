@@ -16,12 +16,12 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	perl-Switch expect lua-devel rrdtool-devel lz4-devel json-c-devel \
 	libcurl-devel freeipmi-devel numactl-devel lynx numactl \
 	rdma-core-devel gcc-c++ flex libgcrypt-devel gcc-gfortran \
-	strace ltrace gdb valgrind wget cmake sudo jansson-devel \
+	strace ltrace gdb wget cmake sudo jansson-devel \
 	openssh-server pam-devel xterm oniguruma-devel xmvn \
 	lua-devel xauth man mailx postfix http-parser-devel \
 	libyaml-devel mlocate gettext-devel texinfo java-21-openjdk-devel \
 	systemd net-tools socat jq squashfs-tools fuse-overlayfs pigz \
-	fuse-devel rpcgen cronie valgrind-devel iproute procps-ng \
+	fuse-devel rpcgen cronie iproute procps-ng \
 	lua-json.noarch rsync crun go gpgme-devel libseccomp-devel \
 	libassuan-devel dbus-devel bash-completion tzdata-java \
 	python3-setuptools-wheel python3-virtualenv python3-urllib3 \
