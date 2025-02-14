@@ -61,7 +61,7 @@ benchmark-%: clean-nodelist clean
 	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 	$(DC) up --remove-orphans -d
 	$(DC) exec $(HOST) bash -c '(find /root/benchmark/run.d/ -type f -name $(SLURM_BENCHMARK)\*.sh | xargs -i echo bash "{} &"; echo wait) | bash -x'
-	$(DC) down
+	$(DC) down &>/dev/null
 	truncate -s0 scaleout/nodelist
 
 test-build: clean-nodelist clean build
