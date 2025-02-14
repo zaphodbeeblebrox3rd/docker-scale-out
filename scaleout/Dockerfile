@@ -286,6 +286,11 @@ RUN sed -e "s/{SUBNET6}/${SUBNET6}/" -e "s/{SUBNET}/${SUBNET}/" \
 	-i /etc/sysconfig/slurmrestd && \
 	chmod 0755 /usr/local/bin/*.sh
 
+ARG DOCKER_FROM
+FROM ${DOCKER_FROM} as scaleout
+ARG CACHE_DESTROYER
+COPY --from=base / /
+
 RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.service,slurmrestd.service}  /usr/lib/systemd/system && \
 	echo -e '#!/bin/bash\nset -o vi' > /etc/profile.d/mode.sh && \
 	chmod 0755 /usr/local/bin/mysql && \
@@ -305,10 +310,6 @@ RUN echo -e "/usr/local/lib\n/usr/local/lib64" >> /etc/ld.so.conf.d/usr_local_li
 	rm -f /run/nologin
 WORKDIR /root/
 
-ARG DOCKER_FROM
-FROM ${DOCKER_FROM} as scaleout
-ARG CACHE_DESTROYER
-COPY --from=base / /
 COPY dump_xdmod.sh /etc/cron.hourly/dump_xdmod.sh
 COPY resume.node.sh /usr/local/sbin/
 COPY suspend.node.sh /usr/local/sbin/
