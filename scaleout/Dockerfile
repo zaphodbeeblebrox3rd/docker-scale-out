@@ -34,6 +34,10 @@ RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest && \
 	ln -s /usr/lib/python3.6/site-packages/pexpect/ /usr/lib/python3.11/site-packages/pexpect && \
 	ln -s /usr/lib/python3.6/site-packages/ptyprocess/ /usr/lib/python3.11/site-packages/ptyprocess
+RUN git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/
+WORKDIR /usr/local/src/valgrind/
+RUN ./autogen.sh && ./configure --prefix=/usr/local/ && \
+        make -j && sudo make install
 RUN git clone --depth 1 --single-branch -b v3.9.2 https://github.com/luarocks/luarocks.git /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ && make -j && make install
