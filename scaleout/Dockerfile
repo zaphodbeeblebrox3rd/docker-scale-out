@@ -90,7 +90,8 @@ RUN /usr/sbin/groupadd -r slurm -g 1001 && \
 	mkdir -m 0770 -p /home/slurm && chown slurm:slurm /home/slurm && \
 	mv /tmp/slurm.bash_profile /home/slurm/.bash_profile && \
 	chown slurm:slurm /home/slurm/.bash_profile && \
-	chmod 0700 /home/slurm/.bash_profile
+	chmod 0700 /home/slurm/.bash_profile && \
+	chmod 0600 /etc/shadow
 
 RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool
 RUN chown slurm:slurm -R /var/spool/slurm
