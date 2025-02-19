@@ -343,7 +343,7 @@ RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 		cd /usr/local/src/slurm/; \
 		git fetch -f origin \${SLURM_RELEASE}:\${SLURM_RELEASE} && \
 		git reset --hard \${SLURM_RELEASE} && \
-		xargs -t -0 -r -n1 git am -3 --ignore-space-change --exclude=NEWS < /usr/local/src/slurm/patch.list && \
+		xargs -t -0 -r -n1 git am -3 --empty=keep --ignore-space-change --exclude=NEWS < /usr/local/src/slurm/patch.list && \
 		make -j >/dev/null && make install >/dev/null; \
 	fi"
 
