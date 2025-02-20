@@ -16,12 +16,12 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	perl-Switch expect lua-devel rrdtool-devel lz4-devel json-c-devel \
 	libcurl-devel freeipmi-devel numactl-devel lynx numactl \
 	rdma-core-devel gcc-c++ flex libgcrypt-devel gcc-gfortran \
-	strace ltrace gdb valgrind wget cmake sudo jansson-devel \
+	strace ltrace gdb wget cmake sudo jansson-devel \
 	openssh-server pam-devel xterm oniguruma-devel xmvn \
 	lua-devel xauth man mailx postfix http-parser-devel \
 	libyaml-devel mlocate gettext-devel texinfo java-21-openjdk-devel \
 	systemd net-tools socat jq squashfs-tools fuse-overlayfs pigz \
-	fuse-devel rpcgen cronie valgrind-devel iproute procps-ng \
+	fuse-devel rpcgen cronie iproute procps-ng \
 	lua-json.noarch rsync crun go gpgme-devel libseccomp-devel \
 	libassuan-devel dbus-devel bash-completion tzdata-java \
 	python3-setuptools-wheel python3-virtualenv python3-urllib3 \
@@ -34,6 +34,11 @@ RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest && \
 	ln -s /usr/lib/python3.6/site-packages/pexpect/ /usr/lib/python3.11/site-packages/pexpect && \
 	ln -s /usr/lib/python3.6/site-packages/ptyprocess/ /usr/lib/python3.11/site-packages/ptyprocess
+RUN git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/
+COPY valgrind.patch /usr/local/src/valgrind/
+WORKDIR /usr/local/src/valgrind/
+RUN git apply valgrind.patch && ./autogen.sh && ./configure --prefix=/usr/local/ && \
+        make -j && sudo make install
 RUN git clone --depth 1 --single-branch -b v3.9.2 https://github.com/luarocks/luarocks.git /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ && make -j && make install
@@ -281,6 +286,11 @@ RUN sed -e "s/{SUBNET6}/${SUBNET6}/" -e "s/{SUBNET}/${SUBNET}/" \
 	-i /etc/sysconfig/slurmrestd && \
 	chmod 0755 /usr/local/bin/*.sh
 
+ARG DOCKER_FROM
+FROM ${DOCKER_FROM} as scaleout
+ARG CACHE_DESTROYER
+COPY --from=base / /
+
 RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.service,slurmrestd.service}  /usr/lib/systemd/system && \
 	echo -e '#!/bin/bash\nset -o vi' > /etc/profile.d/mode.sh && \
 	chmod 0755 /usr/local/bin/mysql && \
@@ -300,10 +310,6 @@ RUN echo -e "/usr/local/lib\n/usr/local/lib64" >> /etc/ld.so.conf.d/usr_local_li
 	rm -f /run/nologin
 WORKDIR /root/
 
-ARG DOCKER_FROM
-FROM ${DOCKER_FROM} as scaleout
-ARG CACHE_DESTROYER
-COPY --from=base / /
 COPY dump_xdmod.sh /etc/cron.hourly/dump_xdmod.sh
 COPY resume.node.sh /usr/local/sbin/
 COPY suspend.node.sh /usr/local/sbin/
