@@ -291,6 +291,9 @@ FROM ${DOCKER_FROM} as scaleout
 ARG CACHE_DESTROYER
 COPY --from=base / /
 
+RUN dd if=/dev/random of=/etc/slurm/slurm.key bs=1024 count=1 && \
+	chown slurm:slurm /etc/slurm/slurm.key && \
+	chmod 600 /etc/slurm/slurm.key
 RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.service,slurmrestd.service}  /usr/lib/systemd/system && \
 	echo -e '#!/bin/bash\nset -o vi' > /etc/profile.d/mode.sh && \
 	chmod 0755 /usr/local/bin/mysql && \
