@@ -276,6 +276,7 @@ COPY mysql /usr/local/bin/mysql
 COPY slurmctld.startup.sh /usr/local/bin/slurmctld.startup.sh
 RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /usr/local/bin/slurmctld.startup.sh
 COPY slurmctld.startup2.sh /usr/local/bin/slurmctld.startup2.sh
+COPY slurmdbd.startup.sh /usr/local/bin/slurmdbd.startup.sh
 COPY slurmd.startup.sh /usr/local/bin/slurmd.startup.sh
 COPY slurmd.check.sh /usr/local/bin/slurmd.check.sh
 COPY login.startup.sh /usr/local/bin/login.startup.sh
