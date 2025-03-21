@@ -318,8 +318,9 @@ COPY dump_xdmod.sh /etc/cron.hourly/dump_xdmod.sh
 COPY resume.node.sh /usr/local/sbin/
 COPY suspend.node.sh /usr/local/sbin/
 RUN chmod 0755 /usr/local/sbin/{resume.node.sh,suspend.node.sh} && \
-	mkdir -p /etc/systemd/system/{postfix,slurmctld,slurmdbd,slurmd,slurmrestd,sackd}.service.d
+	mkdir -p /etc/systemd/system/{postfix,slurmctld,slurmdbd,slurmd,slurmrestd,sackd,munge}.service.d
 COPY slurmd.slice /etc/systemd/system/slurmd.slice
+COPY munge.service /etc/systemd/system/munge.service.d/local.conf
 COPY sackd.service /etc/systemd/system/sackd.service.d/local.conf
 COPY slurmdbd.service /etc/systemd/system/slurmdbd.service.d/local.conf
 COPY slurmctld.service /etc/systemd/system/slurmctld.service.d/local.conf
