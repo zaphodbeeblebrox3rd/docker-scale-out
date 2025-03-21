@@ -295,7 +295,7 @@ COPY --from=base / /
 RUN dd if=/dev/random of=/etc/slurm/slurm.key bs=1024 count=1 && \
 	chown slurm:slurm /etc/slurm/slurm.key && \
 	chmod 600 /etc/slurm/slurm.key
-RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.service,slurmrestd.service}  /usr/lib/systemd/system && \
+RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.service,slurmrestd.service,sackd.service}  /usr/lib/systemd/system && \
 	echo -e '#!/bin/bash\nset -o vi' > /etc/profile.d/mode.sh && \
 	chmod 0755 /usr/local/bin/mysql && \
 	chmod 0755 /usr/local/bin/slurmctld.startup.sh && \
@@ -326,7 +326,7 @@ COPY slurmd.service /etc/systemd/system/slurmd.service.d/local.conf
 COPY slurmrestd.service /etc/systemd/system/slurmrestd.service.d/local.conf
 COPY postfix.service /etc/systemd/system/postfix.service.d/local.conf
 COPY podman-containers /etc/containers/
-RUN systemctl enable slurmdbd slurmctld slurmd slurmrestd postfix slurmd.slice && \
+RUN systemctl enable slurmdbd slurmctld sackd slurmd slurmrestd postfix slurmd.slice && \
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
 RUN touch "/tmp/$CACHE_DESTROYER"
