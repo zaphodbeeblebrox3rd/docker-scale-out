@@ -1,0 +1,7 @@
+[Unit]
+After=sshd.service
+
+[Service]
+ExecStartPre=+mkdir -m 0755 -p /run/slurm/
+ExecStartPre=+chown slurm:slurm /run/slurm/
+ExecCondition=grep -e 'AuthType=auth/slurm' -e 'AuthType=slurm' --  /etc/slurm/slurm.conf
