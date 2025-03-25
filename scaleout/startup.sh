@@ -23,5 +23,8 @@ do
 	echo -e "[Service]\nEnvironment=SLURM_FEDERATION_CLUSTER=${SLURM_FEDERATION_CLUSTER}\n" > ${s}.d/cluster.conf
 done
 
+mkdir -p /var/run/slurm/
+chown slurm:slurm /var/run/slurm/
+
 #start systemd
 exec /lib/systemd/systemd --system --log-level=info --crash-reboot --log-target=console

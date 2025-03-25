@@ -105,6 +105,9 @@ else
 	done
 fi
 
+mkdir -p /var/run/slurmctld/
+chown slurm:slurm /var/run/slurmctld/
+
 date > /var/run/slurmctld.startup
 
 exit 0

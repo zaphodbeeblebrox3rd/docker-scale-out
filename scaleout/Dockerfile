@@ -276,6 +276,7 @@ COPY mysql /usr/local/bin/mysql
 COPY slurmctld.startup.sh /usr/local/bin/slurmctld.startup.sh
 RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /usr/local/bin/slurmctld.startup.sh
 COPY slurmctld.startup2.sh /usr/local/bin/slurmctld.startup2.sh
+COPY slurmdbd.startup.sh /usr/local/bin/slurmdbd.startup.sh
 COPY slurmd.startup.sh /usr/local/bin/slurmd.startup.sh
 COPY slurmd.check.sh /usr/local/bin/slurmd.check.sh
 COPY login.startup.sh /usr/local/bin/login.startup.sh
@@ -291,7 +292,10 @@ FROM ${DOCKER_FROM} as scaleout
 ARG CACHE_DESTROYER
 COPY --from=base / /
 
-RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.service,slurmrestd.service}  /usr/lib/systemd/system && \
+RUN dd if=/dev/random of=/etc/slurm/slurm.key bs=1024 count=1 && \
+	chown slurm:slurm /etc/slurm/slurm.key && \
+	chmod 600 /etc/slurm/slurm.key
+RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.service,slurmrestd.service,sackd.service}  /usr/lib/systemd/system && \
 	echo -e '#!/bin/bash\nset -o vi' > /etc/profile.d/mode.sh && \
 	chmod 0755 /usr/local/bin/mysql && \
 	chmod 0755 /usr/local/bin/slurmctld.startup.sh && \
@@ -314,15 +318,17 @@ COPY dump_xdmod.sh /etc/cron.hourly/dump_xdmod.sh
 COPY resume.node.sh /usr/local/sbin/
 COPY suspend.node.sh /usr/local/sbin/
 RUN chmod 0755 /usr/local/sbin/{resume.node.sh,suspend.node.sh} && \
-	mkdir -p /etc/systemd/system/{postfix,slurmctld,slurmdbd,slurmd,slurmrestd}.service.d
+	mkdir -p /etc/systemd/system/{postfix,slurmctld,slurmdbd,slurmd,slurmrestd,sackd,munge}.service.d
 COPY slurmd.slice /etc/systemd/system/slurmd.slice
+COPY munge.service /etc/systemd/system/munge.service.d/local.conf
+COPY sackd.service /etc/systemd/system/sackd.service.d/local.conf
 COPY slurmdbd.service /etc/systemd/system/slurmdbd.service.d/local.conf
 COPY slurmctld.service /etc/systemd/system/slurmctld.service.d/local.conf
 COPY slurmd.service /etc/systemd/system/slurmd.service.d/local.conf
 COPY slurmrestd.service /etc/systemd/system/slurmrestd.service.d/local.conf
 COPY postfix.service /etc/systemd/system/postfix.service.d/local.conf
 COPY podman-containers /etc/containers/
-RUN systemctl enable slurmdbd slurmctld slurmd slurmrestd postfix slurmd.slice && \
+RUN systemctl enable slurmdbd slurmctld sackd slurmd slurmrestd postfix slurmd.slice && \
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
 RUN touch "/tmp/$CACHE_DESTROYER"
