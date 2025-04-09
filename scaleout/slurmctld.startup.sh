@@ -99,7 +99,7 @@ then
 
 else
 	#wait for primary mgt node to be done starting up
-	while [ ! -s /etc/slurm/nodes.conf -o "$(scontrol --json ping | jq -r '.pings[0].pinged')" = "UP" ]
+	while [ ! -s /etc/slurm/nodes.conf -o ! -s /etc/slurm/jwks.json -o "$(scontrol --json ping | jq -r '.pings[0].pinged')" = "UP" ]
 	do
 		sleep 0.25
 	done
