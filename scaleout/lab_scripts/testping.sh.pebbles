@@ -5,5 +5,5 @@
 #SBATCH --exclusive
 #SBATCH -A stats
 
-ping -c 20 google.com
+ping -c 20 -4 google.com
 
