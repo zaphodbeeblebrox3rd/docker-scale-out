@@ -149,7 +149,7 @@ Default IPv6 is SUBNET6="2001:db8:1:1::".
 ## Custom Nodes
 
 Custom node lists may be provided by setting NODELIST to point to a file
-containing list of nodes for the cluster or modifing the default generated
+containing list of nodes for the cluster or modifying the default generated
 "nodelist" file in the scaleout directory.
 
 The node list follows the following format with one node per line:
@@ -322,7 +322,7 @@ sudo -u xdmod -- /usr/bin/xdmod-ingestor
 exit
 ```
 
-## How to disable buidling xdmod container
+## How to disable building xdmod container
 
 This is will only disable attempts to build and start the container.
 
@@ -339,4 +339,4 @@ of jobs or scaleout instances may result in the following error:
 error: proctrack_g_create: No space left on device
 ```
 
-When this happens, fewers jobs must be run as this a kernel limitation.
+When this happens, fewer jobs must be run as this a kernel limitation.
