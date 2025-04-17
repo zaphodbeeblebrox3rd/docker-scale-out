@@ -322,7 +322,7 @@ sudo -u xdmod -- /usr/bin/xdmod-ingestor
 exit
 ```
 
-## How to disable buidling xdmod container
+## How to disable building xdmod container
 
 This is will only disable attempts to build and start the container.
 
