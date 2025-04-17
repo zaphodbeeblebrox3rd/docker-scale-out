@@ -149,7 +149,7 @@ Default IPv6 is SUBNET6="2001:db8:1:1::".
 ## Custom Nodes
 
 Custom node lists may be provided by setting NODELIST to point to a file
-containing list of nodes for the cluster or modifing the default generated
+containing list of nodes for the cluster or modifying the default generated
 "nodelist" file in the scaleout directory.
 
 The node list follows the following format with one node per line:
