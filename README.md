@@ -339,4 +339,4 @@ of jobs or scaleout instances may result in the following error:
 error: proctrack_g_create: No space left on device
 ```
 
-When this happens, fewers jobs must be run as this a kernel limitation.
+When this happens, fewer jobs must be run as this a kernel limitation.
