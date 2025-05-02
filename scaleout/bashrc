@@ -1,0 +1,8 @@
+#
+# Appended to /etc/bashrc
+#
+export WCOLL=/etc/PDSH/hosts
+alias cls='clear'
+alias ..='cd ..'
+alias l='ls -alF'
+alias w="watch \"sinfo -Nel -pdebug ; squeue -a -o '%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R %Q' | column -t\""
