@@ -254,15 +254,12 @@ RUN echo -e '+:root:ALL\n+:wheel:ALL\n+:slurm:ALL\n-:ALL:ALL' > /etc/security/ac
 	echo -e 'SlurmdSpoolDir=/var/spool/slurm/spool' > /etc/nss_slurm.conf
 
 #active slurm nss
+COPY bashrc /tmp/bashrc
 RUN awk '{if (match($1, /^(passwd|group)/)) {print $1, "slurm", $2, $3} else {print $0}}' > /etc/nsswitch2.conf </etc/nsswitch.conf && \
 	mv /etc/nsswitch2.conf /etc/nsswitch.conf && \
 	mkdir -p /etc/PDSH && \
 	echo -e "node00\nnode01\nnode02\nnode03\nnode04\nnode05\nnode06\nnode07\nnode08\nnode09" > /etc/PDSH/hosts && \
-	echo -e "\nexport WCOLL=/etc/PDSH/hosts\n" >> /etc/bashrc && \
-	echo -e "\nalias cls='clear'\n" >> /etc/bashrc && \
-	echo -e "\nalias ..='cd ..'\n" >> /etc/bashrc && \
-	echo -e "\nalias l='ls -alF'\n" >> /etc/bashrc && \
-	echo -e "\nalias w=\"watch \\\"sinfo -Nel -pdebug ; squeue -a -o '%.18i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R %Q' | column -t\\\"\"\n" >> /etc/bashrc && \
+	cat /tmp/bashrc >> /etc/bashrc && unlink /tmp/bashrc && \
 	mandb && \
 	mkdir -p -m 0777 /lab_scripts
 RUN git clone --depth 1 --single-branch -b v1.0.5 https://github.com/CLIP-HPC/SlurmCommander.git /usr/local/src/slurmcommander/ && \
