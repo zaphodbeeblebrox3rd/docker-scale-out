@@ -117,15 +117,18 @@ RUN chown slurm:slurm -R /var/spool/slurm /etc/slurm/
 RUN /usr/sbin/groupadd -r munge && \
 	/usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
 	mkdir -m 0700 -p /etc/munge/ && \
-	mkdir -p -m 0700 /var/log/munge && chown munge:munge -R /var/log/munge /var/run/munge/ && \
+	mkdir -p -m 0700 /var/log/munge && \
+	chown munge:munge -R /var/log/munge /var/run/munge/ && \
 	dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
 	touch /etc/slurm/jwks.json && \
-	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
-	chmod 0600 /etc/slurm/{jwks.json,jwt.key} && \
 	dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key && \
-	touch /etc/munge/munge.seed && chown munge:munge -R /etc/munge && \
+	touch /etc/munge/munge.seed && \
+	chown munge:munge -R /etc/munge && \
 	chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed && \
-	chown root:root /etc/munge/ -R && chown -R munge:munge /etc/munge
+	chown root:root /etc/munge/ -R && \
+	chown -R munge:munge /etc/munge && \
+	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
+	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
 RUN git clone --depth 1 --single-branch -b pdsh-2.33 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
 WORKDIR /usr/local/src/pdsh
 RUN autoreconf -i && ./configure --without-rsh --with-ssh --prefix=/usr/local --sysconfdir=/etc/ --with-readline && make -j >/dev/null && make install >/dev/null
