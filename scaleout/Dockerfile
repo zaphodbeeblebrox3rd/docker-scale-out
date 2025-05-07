@@ -119,14 +119,14 @@ RUN /usr/sbin/groupadd -r munge && \
 	mkdir -m 0700 -p /etc/munge/ && \
 	mkdir -p -m 0700 /var/log/munge && \
 	chown munge:munge -R /var/log/munge /var/run/munge/ && \
-	dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
-	touch /etc/slurm/jwks.json && \
 	dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key && \
 	touch /etc/munge/munge.seed && \
 	chown munge:munge -R /etc/munge && \
 	chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed && \
 	chown root:root /etc/munge/ -R && \
-	chown -R munge:munge /etc/munge && \
+	chown -R munge:munge /etc/munge
+RUN touch /etc/slurm/jwks.json && \
+	dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
 	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
 	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
 RUN git clone --depth 1 --single-branch -b pdsh-2.33 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
