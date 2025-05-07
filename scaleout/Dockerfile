@@ -112,8 +112,8 @@ RUN /usr/sbin/groupadd -r slurm -g 1001 && \
 	chmod 0700 /home/slurm/.bash_profile && \
 	chmod 0400 /etc/shadow
 
-RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool
-RUN chown slurm:slurm -R /var/spool/slurm
+RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool /etc/slurm/
+RUN chown slurm:slurm -R /var/spool/slurm /etc/slurm/
 RUN /usr/sbin/groupadd -r munge
 RUN /usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge
 RUN mkdir -m 0700 -p /etc/munge/ && \
