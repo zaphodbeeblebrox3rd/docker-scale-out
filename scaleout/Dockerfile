@@ -163,9 +163,14 @@ RUN git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxi
 WORKDIR /usr/local/src/pyxis
 RUN make install
 
-RUN git clone --depth 1 --single-branch --branch 20210222 git://git.savannah.gnu.org/parallel.git /usr/local/src/parallel
-WORKDIR /usr/local/src/parallel
-RUN autoreconf -i && ./configure --disable-documentation && make -j >/dev/null && make install
+RUN wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp/parallel.tar.bz2 && \
+	mkdir -p /usr/local/src/parallel && \
+	tar --strip-components=1 -C /usr/local/src/parallel -xf /tmp/parallel.tar.bz2 && \
+	cd /usr/local/src/parallel && \
+	autoreconf -i && \
+	./configure --disable-documentation && \
+	make -j >/dev/null && \
+	make install
 
 RUN git clone --depth 1 --single-branch --branch 0.1.103 https://github.com/vasi/squashfuse.git /usr/local/src/squashfuse
 WORKDIR /usr/local/src/squashfuse
