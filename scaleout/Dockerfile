@@ -34,6 +34,21 @@ RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest && \
 	ln -s /usr/lib/python3.6/site-packages/pexpect/ /usr/lib/python3.11/site-packages/pexpect && \
 	ln -s /usr/lib/python3.6/site-packages/ptyprocess/ /usr/lib/python3.11/site-packages/ptyprocess
+ARG SLURM_BENCHMARK
+RUN git clone --depth 1 --single-branch -b v1.5.18 https://github.com/aws/s2n-tls.git /usr/local/src/s2n-tls/
+WORKDIR /usr/local/src/s2n-tls/
+RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
+		TYPE="Release"; \
+	else \
+		TYPE="Debug"; \
+	fi; \
+	cmake . -Bbuild \
+		-DCMAKE_BUILD_TYPE=${TYPE} \
+		-DCMAKE_INSTALL_PREFIX=/usr/local/ \
+		-DBUILD_SHARED_LIBS=ON \
+		-DS2N_INSTALL_S2NC_S2ND=1 && \
+	cmake --build build -j $(nproc) && \
+	cmake --install build
 RUN git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/
 COPY valgrind.patch /usr/local/src/valgrind/
 WORKDIR /usr/local/src/valgrind/
@@ -74,7 +89,6 @@ RUN git config --global user.email "you@example.com" && \
 	git config --global user.name "scale out" && \
 	git fetch --depth 1 origin ${SLURM_RELEASE} && \
 	git checkout FETCH_HEAD
-ARG SLURM_BENCHMARK
 RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 		CONF_ARGS=""; \
 	else \
@@ -82,7 +96,7 @@ RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 	fi; \
 	./configure --enable-slurmrestd --enable-multiple-slurmd $CONF_ARGS --with-munge=/usr/local/ --prefix=/usr/local \
 		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local \
-		--enable-pam --sysconfdir=/etc/slurm >/dev/null && \
+		--enable-pam --with-s2n=/usr/local --sysconfdir=/etc/slurm >/dev/null && \
 	make -j >/dev/null && make install >/dev/null && make -j install-contrib >/dev/null && \
 	cd contribs && make install && \
 	ln -nfs /usr/local/src/slurm/contribs/slurm_completion_help/slurm_completion.sh /etc/bash_completion.d/slurm_completion.sh
@@ -98,21 +112,23 @@ RUN /usr/sbin/groupadd -r slurm -g 1001 && \
 	chmod 0700 /home/slurm/.bash_profile && \
 	chmod 0400 /etc/shadow
 
-RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool
-RUN chown slurm:slurm -R /var/spool/slurm
-RUN /usr/sbin/groupadd -r munge
-RUN /usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge
-RUN mkdir -m 0700 -p /etc/munge/ && \
-	mkdir -p -m 0700 /var/log/munge && chown munge:munge -R /var/log/munge /var/run/munge/
-RUN dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
-	touch /etc/slurm/jwks.json && \
+RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool /etc/slurm/
+RUN chown slurm:slurm -R /var/spool/slurm /etc/slurm/
+RUN /usr/sbin/groupadd -r munge && \
+	/usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
+	mkdir -m 0700 -p /etc/munge/ && \
+	mkdir -p -m 0700 /var/log/munge && \
+	chown munge:munge -R /var/log/munge /var/run/munge/ && \
+	dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key && \
+	touch /etc/munge/munge.seed && \
+	chown munge:munge -R /etc/munge && \
+	chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed && \
+	chown root:root /etc/munge/ -R && \
+	chown -R munge:munge /etc/munge
+RUN touch /etc/slurm/jwks.json && \
+	dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
 	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
 	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
-RUN dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key
-RUN touch /etc/munge/munge.seed
-RUN chown munge:munge -R /etc/munge
-RUN chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed
-RUN chown root:root /etc/munge/ -R && chown -R munge:munge /etc/munge
 RUN git clone --depth 1 --single-branch -b pdsh-2.33 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
 WORKDIR /usr/local/src/pdsh
 RUN autoreconf -i && ./configure --without-rsh --with-ssh --prefix=/usr/local --sysconfdir=/etc/ --with-readline && make -j >/dev/null && make install >/dev/null
@@ -363,6 +379,50 @@ RUN ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.
 	chown slurm:slurm /etc/slurm/slurmdbd.conf && \
 	systemctl enable munge && \
 	chmod 4755 /bin/ping
+
+RUN openssl ecparam -out /etc/slurm/ca_cert_key.pem -name prime256v1 -genkey && \
+	openssl req -x509 -key /etc/slurm/ca_cert_key.pem \
+		-out /etc/slurm/ca_cert.pem \
+		-subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=scaleout" && \
+	for CN in ctld dbd restd slurmd sackd login; do \
+		if [ ! -f /etc/slurm/ca_cert.srl ]; then \
+			SERIAL="-CAcreateserial"; \
+		else \
+			SERIAL="-CAserial /etc/slurm/ca_cert.srl"; \
+		fi && \
+		openssl ecparam -out /etc/slurm/${CN}_cert_key.pem -name prime256v1 -genkey && \
+		openssl req -new -key /etc/slurm/${CN}_cert_key.pem -out /etc/slurm/${CN}_cert.csr \
+			-subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=${CN}" && \
+		openssl x509 -req -in /etc/slurm/${CN}_cert.csr \
+			-CA /etc/slurm/ca_cert.pem \
+			-CAkey /etc/slurm/ca_cert_key.pem \
+			${SERIAL} \
+			-out /etc/slurm/${CN}_cert.pem -sha384; \
+	done && \
+	for NODE in $(cut -f1 -d " " /etc/nodelist); do \
+		openssl ecparam -out /etc/slurm/${NODE}_slurmd_cert_key.pem -name prime256v1 -genkey && \
+		openssl req -new -key /etc/slurm/${NODE}_slurmd_cert_key.pem -out /etc/slurm/${NODE}_slurmd_cert.csr \
+			-subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=${NODE}" && \
+		openssl x509 -req -in /etc/slurm/${NODE}_slurmd_cert.csr \
+			-CA /etc/slurm/ca_cert.pem \
+			-CAkey /etc/slurm/ca_cert_key.pem \
+			-CAserial /etc/slurm/ca_cert.srl \
+			-out /etc/slurm/${NODE}_slurmd_cert.pem -sha384 && \
+		base64 /dev/urandom | head -c 32 > /etc/slurm/${NODE}_token.txt && \
+		chown slurm:slurm /etc/slurm/${NODE}_token.txt && \
+		chmod 0600 /etc/slurm/${NODE}_token.txt && \
+		printf "${NODE}: $(cat /etc/slurm/${NODE}_token.txt)\n" >> /etc/slurm/node_token_list.txt; \
+	done && \
+	chown slurm:slurm /etc/slurm/*{.pem,.csr} /etc/slurm/node_token_list.txt && \
+	chmod 0600 /etc/slurm/*_cert_key.pem /etc/slurm/*.csr /etc/slurm/node_token_list.txt && \
+	chmod 0644 /etc/slurm/*_cert.pem
+
+COPY tls_get_node_token.sh /usr/local/sbin/tls_get_node_token.sh
+COPY tls_gen_csr.sh /usr/local/sbin/tls_gen_csr.sh
+COPY tls_validate_node.sh /usr/local/sbin/tls_validate_node.sh
+COPY tls_sign_csr.sh /usr/local/sbin/tls_sign_csr.sh
+COPY tls_get_node_cert_key.sh /usr/local/sbin/tls_get_node_cert_key.sh
+RUN chmod 0700 /usr/local/sbin/{tls_get_node_token.sh,tls_gen_csr.sh,tls_validate_node.sh,tls_sign_csr.sh,tls_get_node_cert_key.sh}
 
 STOPSIGNAL SIGRTMIN+3
 VOLUME ["/tmp", "/run", "/run/lock"]
