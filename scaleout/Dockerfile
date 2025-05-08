@@ -380,6 +380,39 @@ RUN ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.
 	systemctl enable munge && \
 	chmod 4755 /bin/ping
 
+RUN openssl ecparam -out /etc/slurm/ca_cert_key.pem -name prime256v1 -genkey && \
+	openssl req -x509 -key /etc/slurm/ca_cert_key.pem \
+		-out /etc/slurm/ca_cert.pem \
+		-subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=scaleout" && \
+	for CN in ctld dbd restd slurmd sackd; do \
+		if [ ! -f /etc/slurm/ca_cert.srl ]; then \
+			SERIAL="-CAcreateserial"; \
+		else \
+			SERIAL="-CAserial /etc/slurm/ca_cert.srl"; \
+		fi && \
+		openssl ecparam -out /etc/slurm/${CN}_cert_key.pem -name prime256v1 -genkey && \
+		openssl req -new -key /etc/slurm/${CN}_cert_key.pem -out /etc/slurm/${CN}_cert.csr \
+			-subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=${CN}" && \
+		openssl x509 -req -in /etc/slurm/${CN}_cert.csr \
+			-CA /etc/slurm/ca_cert.pem \
+			-CAkey /etc/slurm/ca_cert_key.pem \
+			${SERIAL} \
+			-out /etc/slurm/${CN}_cert.pem -sha384; \
+	done && \
+	for NODE in $(cut -f1 -d " " /etc/nodelist); do \
+		openssl ecparam -out /etc/slurm/${NODE}_slurmd_cert_key.pem -name prime256v1 -genkey && \
+		openssl req -new -key /etc/slurm/${NODE}_slurmd_cert_key.pem -out /etc/slurm/${NODE}_slurmd_cert.csr \
+			-subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=${NODE}" && \
+		openssl x509 -req -in /etc/slurm/${NODE}_slurmd_cert.csr \
+			-CA /etc/slurm/ca_cert.pem \
+			-CAkey /etc/slurm/ca_cert_key.pem \
+			-CAserial /etc/slurm/ca_cert.srl \
+			-out /etc/slurm/${NODE}_slurmd_cert.pem -sha384; \
+	done && \
+	chown slurm:slurm /etc/slurm/*{.pem,.csr} && \
+	chmod 0600 /etc/slurm/*_cert_key.pem /etc/slurm/*.csr && \
+	chmod 0644 /etc/slurm/*_cert.pem
+
 STOPSIGNAL SIGRTMIN+3
 VOLUME ["/tmp", "/run", "/run/lock"]
 COPY hosts.nodes /etc/
