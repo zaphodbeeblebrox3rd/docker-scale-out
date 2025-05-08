@@ -34,6 +34,21 @@ RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest && \
 	ln -s /usr/lib/python3.6/site-packages/pexpect/ /usr/lib/python3.11/site-packages/pexpect && \
 	ln -s /usr/lib/python3.6/site-packages/ptyprocess/ /usr/lib/python3.11/site-packages/ptyprocess
+ARG SLURM_BENCHMARK
+RUN git clone --depth 1 --single-branch -b v1.5.18 https://github.com/aws/s2n-tls.git /usr/local/src/s2n-tls/
+WORKDIR /usr/local/src/s2n-tls/
+RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
+		TYPE="Release"; \
+	else \
+		TYPE="Debug"; \
+	fi; \
+	cmake . -Bbuild \
+		-DCMAKE_BUILD_TYPE=${TYPE} \
+		-DCMAKE_INSTALL_PREFIX=/usr/local/ \
+		-DBUILD_SHARED_LIBS=ON \
+		-DS2N_INSTALL_S2NC_S2ND=1 && \
+	cmake --build build -j $(nproc) && \
+	cmake --install build
 RUN git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/
 COPY valgrind.patch /usr/local/src/valgrind/
 WORKDIR /usr/local/src/valgrind/
@@ -74,7 +89,6 @@ RUN git config --global user.email "you@example.com" && \
 	git config --global user.name "scale out" && \
 	git fetch --depth 1 origin ${SLURM_RELEASE} && \
 	git checkout FETCH_HEAD
-ARG SLURM_BENCHMARK
 RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 		CONF_ARGS=""; \
 	else \
