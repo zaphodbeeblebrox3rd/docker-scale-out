@@ -384,7 +384,7 @@ RUN openssl ecparam -out /etc/slurm/ca_cert_key.pem -name prime256v1 -genkey && 
 	openssl req -x509 -key /etc/slurm/ca_cert_key.pem \
 		-out /etc/slurm/ca_cert.pem \
 		-subj "/C=XX/ST=StateName/L=CityName/O=CompanyName/OU=CompanySectionName/CN=scaleout" && \
-	for CN in ctld dbd restd slurmd sackd; do \
+	for CN in ctld dbd restd slurmd sackd login; do \
 		if [ ! -f /etc/slurm/ca_cert.srl ]; then \
 			SERIAL="-CAcreateserial"; \
 		else \
