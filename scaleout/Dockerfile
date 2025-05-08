@@ -407,11 +407,22 @@ RUN openssl ecparam -out /etc/slurm/ca_cert_key.pem -name prime256v1 -genkey && 
 			-CA /etc/slurm/ca_cert.pem \
 			-CAkey /etc/slurm/ca_cert_key.pem \
 			-CAserial /etc/slurm/ca_cert.srl \
-			-out /etc/slurm/${NODE}_slurmd_cert.pem -sha384; \
+			-out /etc/slurm/${NODE}_slurmd_cert.pem -sha384 && \
+		base64 /dev/urandom | head -c 32 > /etc/slurm/${NODE}_token.txt && \
+		chown slurm:slurm /etc/slurm/${NODE}_token.txt && \
+		chmod 0600 /etc/slurm/${NODE}_token.txt && \
+		printf "${NODE}: $(cat /etc/slurm/${NODE}_token.txt)\n" >> /etc/slurm/node_token_list.txt; \
 	done && \
-	chown slurm:slurm /etc/slurm/*{.pem,.csr} && \
-	chmod 0600 /etc/slurm/*_cert_key.pem /etc/slurm/*.csr && \
+	chown slurm:slurm /etc/slurm/*{.pem,.csr} /etc/slurm/node_token_list.txt && \
+	chmod 0600 /etc/slurm/*_cert_key.pem /etc/slurm/*.csr /etc/slurm/node_token_list.txt && \
 	chmod 0644 /etc/slurm/*_cert.pem
+
+COPY tls_get_node_token.sh /usr/local/sbin/tls_get_node_token.sh
+COPY tls_gen_csr.sh /usr/local/sbin/tls_gen_csr.sh
+COPY tls_validate_node.sh /usr/local/sbin/tls_validate_node.sh
+COPY tls_sign_csr.sh /usr/local/sbin/tls_sign_csr.sh
+COPY tls_get_node_cert_key.sh /usr/local/sbin/tls_get_node_cert_key.sh
+RUN chmod 0700 /usr/local/sbin/{tls_get_node_token.sh,tls_gen_csr.sh,tls_validate_node.sh,tls_sign_csr.sh,tls_get_node_cert_key.sh}
 
 STOPSIGNAL SIGRTMIN+3
 VOLUME ["/tmp", "/run", "/run/lock"]
