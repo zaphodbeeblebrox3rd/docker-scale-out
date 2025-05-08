@@ -96,7 +96,7 @@ RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 	fi; \
 	./configure --enable-slurmrestd --enable-multiple-slurmd $CONF_ARGS --with-munge=/usr/local/ --prefix=/usr/local \
 		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local \
-		--enable-pam --sysconfdir=/etc/slurm >/dev/null && \
+		--enable-pam --with-s2n=/usr/local --sysconfdir=/etc/slurm >/dev/null && \
 	make -j >/dev/null && make install >/dev/null && make -j install-contrib >/dev/null && \
 	cd contribs && make install && \
 	ln -nfs /usr/local/src/slurm/contribs/slurm_completion_help/slurm_completion.sh /etc/bash_completion.d/slurm_completion.sh
