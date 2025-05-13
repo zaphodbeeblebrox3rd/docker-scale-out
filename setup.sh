@@ -1,0 +1,212 @@
+#!/bin/bash
+
+# Exit on any error
+set -e
+
+# Function to check if running as root
+check_root() {
+    if [ "$EUID" -ne 0 ]; then
+        echo "Please run as root"
+        exit 1
+    fi
+}
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Function to get distribution information
+get_distro_info() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        echo "$ID $VERSION_ID"
+    else
+        echo "unknown"
+    fi
+}
+
+# Function to install packages based on distribution
+install_packages() {
+    local distro_info
+    distro_info=$(get_distro_info)
+    local distro_id=${distro_info%% *}
+    local version_id=${distro_info#* }
+
+    echo "Detected distribution: $distro_id $version_id"
+
+    case "$distro_id" in
+        "ubuntu"|"debian")
+            apt-get update
+            apt-get install -y docker.io docker-compose-plugin ssh jq python3 python3-daemon
+            ;;
+        "fedora")
+            dnf install -y docker docker-compose openssh-clients jq python3 python3-daemon
+            systemctl enable docker
+            systemctl start docker
+            ;;
+        "centos"|"rhel"|"rocky"|"almalinux"|"ol")
+            # For RHEL family distributions
+            if command_exists dnf; then
+                # Modern RHEL-based systems (RHEL 8+, CentOS 8+, Rocky Linux, AlmaLinux)
+                dnf install -y docker docker-compose openssh-clients jq python3 python3-daemon
+            else
+                # Legacy RHEL-based systems (RHEL 7, CentOS 7)
+                yum install -y yum-utils
+                yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin openssh-clients jq python3 python3-daemon
+            fi
+            systemctl enable docker
+            systemctl start docker
+            ;;
+        "opensuse"|"suse")
+            zypper install -y docker docker-compose openssh jq python3 python3-daemon
+            systemctl enable docker
+            systemctl start docker
+            ;;
+        "arch")
+            pacman -S --noconfirm docker docker-compose openssh jq python python-daemon
+            systemctl enable docker
+            systemctl start docker
+            ;;
+        *)
+            echo "Unsupported distribution: $distro_id"
+            echo "Please install the following packages manually:"
+            echo "- docker"
+            echo "- docker-compose"
+            echo "- openssh"
+            echo "- jq"
+            echo "- python3"
+            echo "- python3-daemon"
+            exit 1
+            ;;
+    esac
+
+    # Verify installations
+    echo "Verifying installations..."
+    for cmd in docker docker-compose ssh jq python3; do
+        if ! command_exists "$cmd"; then
+            echo "Error: $cmd installation failed"
+            exit 1
+        fi
+    done
+}
+
+# Function to configure sysctl
+configure_sysctl() {
+    cat > /etc/sysctl.d/99-slurm-docker.conf << EOF
+net.ipv4.tcp_max_syn_backlog=4096
+net.core.netdev_max_backlog=1000
+net.core.somaxconn=15000
+
+# Force gc to clean-up quickly
+net.ipv4.neigh.default.gc_interval = 3600
+
+# Set ARP cache entry timeout
+net.ipv4.neigh.default.gc_stale_time = 3600
+
+# Setup DNS threshold for arp
+net.ipv4.neigh.default.gc_thresh3 = 8096
+net.ipv4.neigh.default.gc_thresh2 = 4048
+net.ipv4.neigh.default.gc_thresh1 = 1024
+
+# Increase map count for elasticsearch
+vm.max_map_count=262144
+
+# Avoid running out of file descriptors
+fs.file-max=10000000
+fs.inotify.max_user_instances=65535
+fs.inotify.max_user_watches=1048576
+
+#Request kernel max number of cgroups
+fs.inotify.max_user_instances=65535
+EOF
+
+    # Apply sysctl settings
+    sysctl --system
+}
+
+# Function to configure Docker for cgroupsv2
+configure_docker() {
+    # Create docker daemon config
+    mkdir -p /etc/docker
+    cat > /etc/docker/daemon.json << EOF
+{
+  "exec-opts": [
+    "native.cgroupdriver=systemd"
+  ],
+  "features": {
+    "buildkit": true
+  },
+  "experimental": true,
+  "cgroup-parent": "docker.slice",
+  "default-cgroupns-mode": "host",
+  "storage-driver": "overlay2"
+}
+EOF
+
+    # Create docker slice unit file
+    cat > /etc/systemd/system/docker.slice << EOF
+[Unit]
+Description=docker slice
+Before=slices.target
+[Slice]
+CPUAccounting=true
+MemoryAccounting=true
+Delegate=yes
+EOF
+
+    # Create docker service override
+    mkdir -p /usr/lib/systemd/system/docker.service.d
+    cat > /usr/lib/systemd/system/docker.service.d/local.conf << EOF
+[Service]
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+Delegate=yes
+EOF
+
+    # Reload systemd and restart docker
+    systemctl daemon-reload
+    systemctl restart docker.slice docker
+}
+
+# Function to enable IPv6 in Docker
+enable_docker_ipv6() {
+    if [ ! -f /etc/docker/daemon.json ]; then
+        echo "{}" > /etc/docker/daemon.json
+    fi
+
+    # Add IPv6 configuration to existing daemon.json
+    jq '. + {"ipv6": true, "fixed-cidr-v6": "2001:db8:1::/64"}' /etc/docker/daemon.json > /tmp/daemon.json
+    mv /tmp/daemon.json /etc/docker/daemon.json
+
+    # Restart docker to apply changes
+    systemctl restart docker
+}
+
+# Main execution
+echo "Starting setup..."
+
+# Check if running as root
+check_root
+
+# Install required packages
+echo "Installing required packages..."
+install_packages
+
+# Configure sysctl
+echo "Configuring sysctl settings..."
+configure_sysctl
+
+# Configure Docker for cgroupsv2
+echo "Configuring Docker for cgroupsv2..."
+configure_docker
+
+# Enable IPv6 in Docker
+echo "Enabling IPv6 in Docker..."
+enable_docker_ipv6
+
+echo "Setup completed successfully!"
+echo "Please reboot your system to ensure all changes take effect." 
