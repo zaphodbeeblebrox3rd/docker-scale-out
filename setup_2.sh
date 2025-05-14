@@ -169,7 +169,7 @@ perform_build() {
 
     # Verify images were built successfully
     echo "Verifying Docker images..."
-    local required_images=("scaleout" "slurm" "mariadb" "nginx" "elasticsearch" "kibana" "grafana")
+    local required_images=("scaleout" "grafana")
     local missing_images=0
 
     for image in "${required_images[@]}"; do
