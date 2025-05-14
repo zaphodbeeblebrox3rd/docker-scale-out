@@ -1,15 +1,18 @@
 # slurm-docker-scaleout
 Docker compose cluster for testing Slurm
 
-> All packages and prerequisite configuration for Debian or RHEL-family Linux distros can be performed by running setup.sh.  This is not for production use, it is not to be installed on a production server, and it should be on a dedicated VM or test machine to avoid conflicts with other services.
+> All packages and prerequisite configuration for Debian or RHEL-family Linux distros can be performed by running setup_1.sh.  It might even work on Suse or Arch although further testing is needed.  After rebooting, run setup_2.sh to finish the build and start the containers.
+
+>This is not for production use, it is not to be installed on a production server, and it should be on a dedicated VM or test machine to avoid conflicts with other services.
 
 { .is-info }
 
 ## Automated Setup
 Run the setup.sh script
 ```
-chmod +x setup.sh
-./setup.sh
+chmod +x setup_1.sh
+chmod +x setup_2.sh
+./setup_1.sh
 ```
 
 ## Prerequisites

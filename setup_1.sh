@@ -3,6 +3,27 @@
 # Exit on any error
 set -e
 
+# Function to update git submodules
+update_submodules() {
+    if ! command_exists git; then
+        echo "Error: git is not installed. Please install git first."
+        exit 1
+    fi
+
+    if [ ! -d .git ]; then
+        echo "Error: Not a git repository. Please run this script from the repository root."
+        exit 1
+    fi
+
+    echo "Updating git submodules..."
+    git submodule update --init --force --remote --recursive
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to update git submodules"
+        exit 1
+    fi
+    echo "Git submodules updated successfully"
+}
+
 # Function to check if running as root
 check_root() {
     if [ "$EUID" -ne 0 ]; then
@@ -414,8 +435,53 @@ enable_docker_ipv6() {
     systemctl restart docker
 }
 
+# Function to ensure Docker is enabled and running
+ensure_docker_running() {
+    echo "Ensuring Docker is enabled and running..."
+
+    # Enable Docker to start on boot
+    if command_exists systemctl; then
+        if ! systemctl is-enabled docker > /dev/null 2>&1; then
+            echo "Enabling Docker to start on boot..."
+            systemctl enable docker
+        fi
+    fi
+
+    # Check if Docker is running
+    if ! docker info > /dev/null 2>&1; then
+        echo "Starting Docker daemon..."
+        if command_exists systemctl; then
+            systemctl start docker
+        elif command_exists service; then
+            service docker start
+        else
+            echo "Error: Could not start docker daemon. Please start it manually after reboot."
+            return 1
+        fi
+
+        # Wait for Docker to be ready
+        echo "Waiting for Docker daemon to be ready..."
+        local attempts=0
+        while ! docker info > /dev/null 2>&1; do
+            attempts=$((attempts + 1))
+            if [ $attempts -gt 30 ]; then
+                echo "Warning: Docker daemon failed to start within 30 seconds"
+                echo "Docker will be started automatically after reboot"
+                return 0
+            fi
+            sleep 1
+        done
+        echo "Docker daemon started successfully"
+    else
+        echo "Docker daemon is already running"
+    fi
+}
+
 # Main execution
 echo "Starting setup..."
+
+# Update git submodules first
+update_submodules
 
 # Check and elevate privileges if needed
 check_root "$@"
@@ -439,5 +505,8 @@ configure_docker
 echo "Enabling IPv6 in Docker..."
 enable_docker_ipv6
 
+# Ensure Docker is enabled and running
+ensure_docker_running
+
 echo "Setup completed successfully!"
-echo "Please reboot your system to ensure all changes take effect." 
+echo "Please reboot your system to ensure all changes take effect prior to running setup_2.sh" 
