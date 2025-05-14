@@ -6,8 +6,22 @@ set -e
 # Function to check if running as root
 check_root() {
     if [ "$EUID" -ne 0 ]; then
-        echo "Please run as root"
-        exit 1
+        echo "This script needs to be run as root to perform system-wide changes."
+        echo "Attempting to elevate privileges..."
+        
+        # Check if sudo is available
+        if command_exists sudo; then
+            echo "Using sudo to elevate privileges..."
+            exec sudo "$0" "$@"
+        # Check if su is available
+        elif command_exists su; then
+            echo "Using su to elevate privileges..."
+            exec su -c "$0 $*" root
+        else
+            echo "Error: Neither sudo nor su is available."
+            echo "Please run this script as root manually."
+            exit 1
+        fi
     fi
 }
 
@@ -26,6 +40,21 @@ get_distro_info() {
     fi
 }
 
+# Function to verify root access
+verify_root_access() {
+    if ! command_exists id; then
+        echo "Error: Cannot verify root access"
+        exit 1
+    fi
+
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "Error: Failed to obtain root privileges"
+        exit 1
+    fi
+
+    echo "Successfully obtained root privileges"
+}
+
 # Function to install packages based on distribution
 install_packages() {
     local distro_info
@@ -35,13 +64,65 @@ install_packages() {
 
     echo "Detected distribution: $distro_id $version_id"
 
+    # Common build dependencies
+    local build_deps="gcc g++ make cmake autoconf automake libtool m4 git"
+    # Common development libraries
+    local dev_libs="libssl-dev libmariadb-dev libmariadb-dev-compat libmunge-dev libhwloc-dev libpam0g-dev libreadline-dev libncurses5-dev liblz4-dev libzstd-dev libjson-c-dev libjwt-dev libhttp-parser-dev libcurl4-openssl-dev libyaml-dev"
+    # Common system utilities
+    local sys_utils="wget curl unzip tar gzip bzip2 xz-utils"
+
     case "$distro_id" in
         "ubuntu"|"debian")
             apt-get update
-            apt-get install -y docker.io docker-compose-plugin ssh jq python3 python3-daemon
+            apt-get install -y \
+                docker.io \
+                docker-compose-plugin \
+                ssh \
+                jq \
+                python3 \
+                python3-daemon \
+                $build_deps \
+                $dev_libs \
+                $sys_utils
             ;;
         "fedora")
-            dnf install -y docker docker-compose openssh-clients jq python3 python3-daemon
+            dnf install -y \
+                docker \
+                docker-compose \
+                openssh-clients \
+                jq \
+                python3 \
+                python3-daemon \
+                gcc \
+                gcc-c++ \
+                make \
+                cmake \
+                autoconf \
+                automake \
+                libtool \
+                m4 \
+                git \
+                openssl-devel \
+                mariadb-devel \
+                munge-devel \
+                hwloc-devel \
+                pam-devel \
+                readline-devel \
+                ncurses-devel \
+                lz4-devel \
+                libzstd-devel \
+                json-c-devel \
+                libjwt-devel \
+                http-parser-devel \
+                libcurl-devel \
+                libyaml-devel \
+                wget \
+                curl \
+                unzip \
+                tar \
+                gzip \
+                bzip2 \
+                xz
             systemctl enable docker
             systemctl start docker
             ;;
@@ -49,23 +130,167 @@ install_packages() {
             # For RHEL family distributions
             if command_exists dnf; then
                 # Modern RHEL-based systems (RHEL 8+, CentOS 8+, Rocky Linux, AlmaLinux)
-                dnf install -y docker docker-compose openssh-clients jq python3 python3-daemon
+                dnf install -y \
+                    docker \
+                    docker-compose \
+                    openssh-clients \
+                    jq \
+                    python3 \
+                    python3-daemon \
+                    gcc \
+                    gcc-c++ \
+                    make \
+                    cmake \
+                    autoconf \
+                    automake \
+                    libtool \
+                    m4 \
+                    git \
+                    openssl-devel \
+                    mariadb-devel \
+                    munge-devel \
+                    hwloc-devel \
+                    pam-devel \
+                    readline-devel \
+                    ncurses-devel \
+                    lz4-devel \
+                    libzstd-devel \
+                    json-c-devel \
+                    libjwt-devel \
+                    http-parser-devel \
+                    libcurl-devel \
+                    libyaml-devel \
+                    wget \
+                    curl \
+                    unzip \
+                    tar \
+                    gzip \
+                    bzip2 \
+                    xz
             else
                 # Legacy RHEL-based systems (RHEL 7, CentOS 7)
                 yum install -y yum-utils
                 yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-                yum install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin openssh-clients jq python3 python3-daemon
+                yum install -y \
+                    docker-ce \
+                    docker-ce-cli \
+                    containerd.io \
+                    docker-compose-plugin \
+                    openssh-clients \
+                    jq \
+                    python3 \
+                    python3-daemon \
+                    gcc \
+                    gcc-c++ \
+                    make \
+                    cmake \
+                    autoconf \
+                    automake \
+                    libtool \
+                    m4 \
+                    git \
+                    openssl-devel \
+                    mariadb-devel \
+                    munge-devel \
+                    hwloc-devel \
+                    pam-devel \
+                    readline-devel \
+                    ncurses-devel \
+                    lz4-devel \
+                    libzstd-devel \
+                    json-c-devel \
+                    libjwt-devel \
+                    http-parser-devel \
+                    libcurl-devel \
+                    libyaml-devel \
+                    wget \
+                    curl \
+                    unzip \
+                    tar \
+                    gzip \
+                    bzip2 \
+                    xz
             fi
             systemctl enable docker
             systemctl start docker
             ;;
         "opensuse"|"suse")
-            zypper install -y docker docker-compose openssh jq python3 python3-daemon
+            zypper install -y \
+                docker \
+                docker-compose \
+                openssh \
+                jq \
+                python3 \
+                python3-daemon \
+                gcc \
+                gcc-c++ \
+                make \
+                cmake \
+                autoconf \
+                automake \
+                libtool \
+                m4 \
+                git \
+                libopenssl-devel \
+                mariadb-devel \
+                munge-devel \
+                hwloc-devel \
+                pam-devel \
+                readline-devel \
+                ncurses-devel \
+                liblz4-devel \
+                libzstd-devel \
+                json-c-devel \
+                libjwt-devel \
+                http-parser-devel \
+                libcurl-devel \
+                libyaml-devel \
+                wget \
+                curl \
+                unzip \
+                tar \
+                gzip \
+                bzip2 \
+                xz
             systemctl enable docker
             systemctl start docker
             ;;
         "arch")
-            pacman -S --noconfirm docker docker-compose openssh jq python python-daemon
+            pacman -S --noconfirm \
+                docker \
+                docker-compose \
+                openssh \
+                jq \
+                python \
+                python-daemon \
+                gcc \
+                make \
+                cmake \
+                autoconf \
+                automake \
+                libtool \
+                m4 \
+                git \
+                openssl \
+                mariadb-libs \
+                munge \
+                hwloc \
+                pam \
+                readline \
+                ncurses \
+                lz4 \
+                zstd \
+                json-c \
+                libjwt \
+                http-parser \
+                curl \
+                libyaml \
+                wget \
+                unzip \
+                tar \
+                gzip \
+                bzip2 \
+                xz
             systemctl enable docker
             systemctl start docker
             ;;
@@ -78,13 +303,16 @@ install_packages() {
             echo "- jq"
             echo "- python3"
             echo "- python3-daemon"
+            echo "- build tools (gcc, make, cmake, etc.)"
+            echo "- development libraries (openssl, mariadb, munge, etc.)"
+            echo "- system utilities (wget, curl, etc.)"
             exit 1
             ;;
     esac
 
     # Verify installations
     echo "Verifying installations..."
-    for cmd in docker docker-compose ssh jq python3; do
+    for cmd in docker docker-compose ssh jq python3 gcc make cmake git; do
         if ! command_exists "$cmd"; then
             echo "Error: $cmd installation failed"
             exit 1
@@ -189,8 +417,11 @@ enable_docker_ipv6() {
 # Main execution
 echo "Starting setup..."
 
-# Check if running as root
-check_root
+# Check and elevate privileges if needed
+check_root "$@"
+
+# Verify we have root access
+verify_root_access
 
 # Install required packages
 echo "Installing required packages..."

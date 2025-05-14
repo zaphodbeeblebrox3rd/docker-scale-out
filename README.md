@@ -1,7 +1,19 @@
 # slurm-docker-scaleout
 Docker compose cluster for testing Slurm
 
+> All packages and prerequisite configuration for Debian or RHEL-family Linux distros can be performed by running setup.sh.  This is not for production use, it is not to be installed on a production server, and it should be on a dedicated VM or test machine to avoid conflicts with other services.
+
+{ .is-info }
+
+## Automated Setup
+Run the setup.sh script
+```
+chmod +x setup.sh
+./setup.sh
+```
+
 ## Prerequisites
+This section is for reference only if the setup.sh script ran to completion successfully.
   * docker (25.x.x+ with cgroupsv2 or 24.x.x with cgroupsv1)
     * IPv6 must be configured in docker: https://docs.docker.com/config/daemon/ipv6/
   * docker-compose-plugin v2.18.1+
@@ -11,6 +23,10 @@ Docker compose cluster for testing Slurm
     * python3-daemon
 
 ## Changes needed in sysctl.conf:
+This section is for reference only if the setup.sh script ran to completion successfully.
+
+Run this codeblock for the necessary network reconfiguration.
+
 ```
 net.ipv4.tcp_max_syn_backlog=4096
 net.core.netdev_max_backlog=1000
@@ -40,6 +56,7 @@ fs.inotify.max_user_instances=65535
 ```
 
 ## Docker configuration required with cgroupsv2
+This section is for reference only if the setup.sh script ran to completion successfully.
 
 Make sure the host machine is running CgroupV2 and not hybrid mode:
 	https://slurm.schedmd.com/faq.html#cgroupv2
