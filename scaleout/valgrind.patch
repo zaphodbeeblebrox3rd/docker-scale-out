@@ -1,7 +1,3 @@
-diff --git a/coregrind/m_initimg/initimg-linux.c b/coregrind/m_initimg/initimg-linux.c
-index 5359189bf6..58a2a1e563 100644
---- a/coregrind/m_initimg/initimg-linux.c
-+++ b/coregrind/m_initimg/initimg-linux.c
 @@ -1151,7 +1151,7 @@ IIFinaliseImageInfo VG_(ii_create_image)( IICreateImageInfo iicii,
     //--------------------------------------------------------------
     { 

@@ -1,0 +1,54 @@
+# Windows-compatible Makefile for docker-scale-out
+
+# Default target
+all: build up
+
+# Build the containers
+build:
+	powershell -Command ".\buildout.ps1"
+	docker compose build
+
+# Verify required files
+verify:
+	@echo Verifying required files...
+	@if not exist docker-compose.yml (echo Error: docker-compose.yml not found && exit 1)
+	@if not exist scaleout\Dockerfile.win (echo Error: scaleout\Dockerfile.win not found && exit 1)
+	@if not exist scaleout\profile.sh (echo Error: scaleout\profile.sh not found && exit 1)
+	@if not exist scaleout\startup.sh (echo Error: scaleout\startup.sh not found && exit 1)
+	@echo All required files are present.
+
+# Start the containers
+up: verify
+	@echo Starting containers...
+	docker compose up -d
+	@echo Waiting for containers to be ready...
+	timeout /t 10 /nobreak
+	docker compose ps
+
+# Stop the containers
+down:
+	docker compose down
+
+# Clean up
+clean:
+	@echo "Cleaning up..."
+	@if exist docker-compose.yml ( \
+		docker compose down --volumes --remove-orphans || exit 0 \
+	) else ( \
+		echo "No docker-compose.yml found, skipping docker compose down" \
+	)
+	if exist scaleout\nodelist del scaleout\nodelist
+	if exist scaleout\hosts.nodes del scaleout\hosts.nodes
+	@echo "Cleanup complete"
+
+# Help target
+help:
+	@echo Available targets:
+	@echo   build  - Build the containers
+	@echo   verify - Verify required files
+	@echo   up     - Start the containers
+	@echo   down   - Stop the containers
+	@echo   clean  - Clean up generated files
+	@echo   help   - Show this help message
+
+.PHONY: all build verify up down clean help 
