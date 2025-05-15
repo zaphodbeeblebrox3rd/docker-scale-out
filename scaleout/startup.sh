@@ -6,9 +6,6 @@ cat /etc/hosts.nodes >> /etc/hosts
 #ensure the systemd cgroup directory exists for enroot
 mkdir -p $(awk -F: '$2 ~ /systemd/ {printf "/sys/fs/cgroup/systemd/%s", $3}' /proc/self/cgroup)
 
-mkdir -p -m 0755 /run/slurm
-chown root:root -R /run/slurm
-
 #systemd user@.service handles on normal nodes
 for i in arnold bambam barney betty chip dino edna fred gazoo pebbles wilma; do
 	uid=$(id -u $i)
@@ -22,9 +19,6 @@ do
 	mkdir -p ${s}.d
 	echo -e "[Service]\nEnvironment=SLURM_FEDERATION_CLUSTER=${SLURM_FEDERATION_CLUSTER}\n" > ${s}.d/cluster.conf
 done
-
-mkdir -p /var/run/slurm/
-chown slurm:slurm /var/run/slurm/
 
 #start systemd
 exec /lib/systemd/systemd --system --log-level=info --crash-reboot --log-target=console
