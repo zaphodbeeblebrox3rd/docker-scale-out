@@ -425,7 +425,7 @@ COPY tls_get_node_cert_key.sh /usr/local/sbin/tls_get_node_cert_key.sh
 RUN chmod 0700 /usr/local/sbin/{tls_get_node_token.sh,tls_gen_csr.sh,tls_validate_node.sh,tls_sign_csr.sh,tls_get_node_cert_key.sh}
 
 STOPSIGNAL SIGRTMIN+3
-VOLUME ["/tmp", "/run", "/run/lock"]
+VOLUME ["/tmp", "/run", "/run/lock", "/run/slurm", "/run/slurmctld", "/run/slurmdbd", "/var/run/slurm/" ]
 COPY hosts.nodes /etc/
 COPY startup.sh /sbin/
 CMD [ "/sbin/startup.sh" ]
