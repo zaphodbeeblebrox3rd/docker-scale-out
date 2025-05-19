@@ -10,7 +10,9 @@ param(
 # Function to generate node list
 function Generate-NodeList {
     param(
-        [int]$NodesCount = 9
+        [int]$NodesCount = 9,
+        [string]$SlurmBenchmark = "",
+        [string]$Federation = ""
     )
 
     if ($Federation) {
@@ -39,14 +41,23 @@ function Generate-NodeList {
 
 # Function to generate hosts file
 function Generate-HostsFile {
+    param(
+        [string]$Nodelist
+    )
+
     if (Test-Path "scaleout/hosts.nodes") {
         Remove-Item "scaleout/hosts.nodes" -Force
     }
 
-    Get-Content $Nodelist | ForEach-Object {
-        $name, $cluster, $ip4, $ip6 = $_ -split '\s+'
-        if ($ip4) { "$ip4 $name" | Add-Content "scaleout/hosts.nodes" }
-        if ($ip6) { "$ip6 $name" | Add-Content "scaleout/hosts.nodes" }
+    if (Test-Path $Nodelist) {
+        Get-Content $Nodelist | ForEach-Object {
+            $name, $cluster, $ip4, $ip6 = $_ -split '\s+'
+            if ($ip4) { "$ip4 $name" | Add-Content "scaleout/hosts.nodes" }
+            if ($ip6) { "$ip6 $name" | Add-Content "scaleout/hosts.nodes" }
+        }
+    }
+    else {
+        Write-Host "Warning: Nodelist file not found at $Nodelist" -ForegroundColor Yellow
     }
 }
 
@@ -105,78 +116,68 @@ function Get-HostList {
     return $hosts
 }
 
-# Main execution
-$NodesCount = if ($SlurmBenchmark) { 100 } else { 9 }
+# Function to generate Docker Compose configuration
+function Generate-DockerCompose {
+    param(
+        [string]$Subnet,
+        [string]$Subnet6,
+        [string]$Nodelist,
+        [string]$SlurmBenchmark = "",
+        [string]$Federation = ""
+    )
 
-# Generate node list if needed
-if (-not (Test-Path $Nodelist) -or $SlurmBenchmark) {
-    Generate-NodeList -NodesCount $NodesCount
-}
+    # Generate node list if needed
+    if (-not (Test-Path $Nodelist) -or $SlurmBenchmark) {
+        Generate-NodeList -NodesCount $NodesCount -SlurmBenchmark $SlurmBenchmark -Federation $Federation
+    }
 
-# Generate hosts file
-Generate-HostsFile
+    # Generate hosts file
+    Generate-HostsFile -Nodelist $Nodelist
 
-# Get host list
-$hosts = Get-HostList
+    # Get host list
+    $hostList = Get-HostList -Federation $Federation
 
-# Generate docker-compose.yml
-$slurmBenchmarkArg = if ($SlurmBenchmark) { "        SLURM_BENCHMARK: $SlurmBenchmark" } else { "" }
+    # Format hosts for docker-compose
+    $formattedHosts = ($hostList.GetEnumerator() | ForEach-Object {
+        "      $($_.Key): $($_.Value)"
+    }) -join "`n"
 
-# Format hosts for YAML
-$formattedHosts = $hosts.GetEnumerator() | ForEach-Object { "      - `"$($_.Key):$($_.Value)`"" } | Out-String
-
-$composeContent = @"
-networks:
-  internal:
-    driver: bridge
-    driver_opts:
-        com.docker.network.bridge.enable_ip_masquerade: 'true'
-        com.docker.network.bridge.enable_icc: 'true'
-    internal: false
-    enable_ipv6: true
-    ipam:
-      config:
-        - subnet: "${Subnet}.0.0/16"
-        - subnet: "${Subnet6}/64"
-
-volumes:
-  root-home:
-  home:
-  etc-ssh:
-  cluster-etc-slurm:
-  slurmctld:
-  elastic_data01:
-  elastic_data02:
-  elastic_data03:
-  mail:
-  auth:
-  xdmod:
-  src:
-  container-shared:
+    # Generate docker-compose.yml content
+    $yamlContent = @"
+# version: '3.8'
 
 services:
   db:
-    image: sql_server:latest
-    build:
-      context: ./sql_server
-      args:
-        SUBNET: "${Subnet}"
-        SUBNET6: "${Subnet6}"
-    environment:
-      - MYSQL_ROOT_PASSWORD=password
-      - MYSQL_USER=slurm
-      - MYSQL_PASSWORD=password
-      - MYSQL_DATABASE=slurm_acct_db
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+    image: scaleout:latest
     hostname: db
     networks:
       internal:
         ipv4_address: "${Subnet}.1.3"
         ipv6_address: "${Subnet6}1:3"
+    volumes:
+      - root-home:/root
+      - cluster-etc-slurm:/etc/slurm
+      - mail:/var/spool/mail/
+      - src:/usr/local/src/
+      - /etc/localtime:/etc/localtime:ro
+      - /run/
+      - /run/lock/
+      - /sys/
+      - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
+      - /sys/fs/cgroup/docker.slice/:/sys/fs/cgroup/docker.slice/:rw
+      - /sys/fs/fuse/:/sys/fs/fuse/:rw
+      - /tmp/
+      - /var/lib/journal
+      - ./logs:/var/log/containers
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -190,14 +191,6 @@ services:
 $formattedHosts
 
   slurmdbd:
-    build:
-      context: ./scaleout
-      dockerfile: Dockerfile.win
-      args:
-        DOCKER_FROM: almalinux:8
-        SLURM_RELEASE: master
-        DISTRO: almalinux:8
-$slurmBenchmarkArg
     image: scaleout:latest
     hostname: slurmdbd
     networks:
@@ -218,9 +211,16 @@ $slurmBenchmarkArg
       - /sys/fs/fuse/:/sys/fs/fuse/:rw
       - /tmp/
       - /var/lib/journal
+      - ./logs:/var/log/containers
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -266,9 +266,16 @@ $formattedHosts
       - /sys/fs/fuse/:/sys/fs/fuse/:rw
       - /tmp/
       - /var/lib/journal
+      - ./logs:/var/log/containers
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -312,9 +319,16 @@ $formattedHosts
       - /sys/fs/fuse/:/sys/fs/fuse/:rw
       - /tmp/
       - /var/lib/journal
+      - ./logs:/var/log/containers
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -331,6 +345,9 @@ $formattedHosts
 $formattedHosts
 
   login:
+    build:
+      context: ./login
+      dockerfile: Dockerfile.win
     image: scaleout:latest
     environment:
       - SUBNET="${Subnet}"
@@ -361,9 +378,16 @@ $formattedHosts
       - /sys/fs/fuse/:/sys/fs/fuse/:rw
       - /tmp/
       - /var/lib/journal
+      - ./logs:/var/log/containers
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -377,8 +401,8 @@ $formattedHosts
 $formattedHosts
 
   rest:
-    hostname: rest
     image: scaleout:latest
+    hostname: rest
     networks:
       internal:
         ipv4_address: "${Subnet}.1.6"
@@ -395,9 +419,16 @@ $formattedHosts
       - /sys/fs/fuse/:/sys/fs/fuse/:rw
       - /tmp/
       - /var/lib/journal
+      - ./logs:/var/log/containers
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -428,10 +459,16 @@ $formattedHosts
         ipv6_address: "${Subnet6}1:7"
     volumes:
       - auth:/auth/
-      - /dev/log:/dev/log
+      - ./logs:/var/log/containers
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -455,17 +492,23 @@ $formattedHosts
     environment:
       - SUBNET="${Subnet}"
       - SUBNET6="${Subnet6}"
-    volumes:
-      - /dev/log:/dev/log
     networks:
       internal:
         ipv4_address: "${Subnet}.1.20"
         ipv6_address: "${Subnet6}1:20"
+    volumes:
+      - ./logs:/var/log/containers
     ports:
       - 3000:3000
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -501,15 +544,21 @@ $formattedHosts
       memlock:
         soft: -1
         hard: -1
-    volumes:
-      - /dev/log:/dev/log
     networks:
       internal:
         ipv4_address: "${Subnet}.1.19"
         ipv6_address: "${Subnet6}1:19"
+    volumes:
+      - ./logs:/var/log/containers
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -529,20 +578,26 @@ $formattedHosts
       - SUBNET6="${Subnet6}"
       - DEFAULT_SSHHOST=login
     volumes:
-      - /dev/log:/dev/log
       - etc-ssh:/etc/shared-ssh
       - home:/home/
+      - ./logs:/var/log/containers
     networks:
       internal:
         ipv4_address: "${Subnet}.1.21"
         ipv6_address: "${Subnet6}1:21"
-    depends_on:
-      - "login"
     ports:
       - 8081:80
+    depends_on:
+      - "login"
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -556,6 +611,7 @@ $formattedHosts
   xdmod:
     build:
       context: ./xdmod
+      dockerfile: Dockerfile.win
     image: xdmod:latest
     environment:
       - SUBNET="${Subnet}"
@@ -578,11 +634,18 @@ $formattedHosts
       - /tmp/
       - /var/lib/journal
       - xdmod:/xdmod/
+      - ./logs:/var/log/containers
     ports:
       - 8082:80
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -607,11 +670,19 @@ $formattedHosts
       internal:
         ipv4_address: "${Subnet}.1.23"
         ipv6_address: "${Subnet6}1:23"
+    volumes:
+      - ./logs:/var/log/containers
     ports:
       - 8083:8080
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -639,7 +710,7 @@ $formattedHosts
         hard: -1
     volumes:
       - elastic_data01:/usr/share/elasticsearch/data
-      - /dev/log:/dev/log
+      - ./logs:/var/log/containers
     networks:
       internal:
         ipv4_address: "${Subnet}.1.15"
@@ -648,7 +719,13 @@ $formattedHosts
       - 9200:9200
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -676,14 +753,20 @@ $formattedHosts
         hard: -1
     volumes:
       - elastic_data02:/usr/share/elasticsearch/data
-      - /dev/log:/dev/log
+      - ./logs:/var/log/containers
     networks:
       internal:
         ipv4_address: "${Subnet}.1.16"
         ipv6_address: "${Subnet6}1:16"
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -711,14 +794,20 @@ $formattedHosts
         hard: -1
     volumes:
       - elastic_data03:/usr/share/elasticsearch/data
-      - /dev/log:/dev/log
+      - ./logs:/var/log/containers
     networks:
       internal:
         ipv4_address: "${Subnet}.1.17"
         ipv6_address: "${Subnet6}1:17"
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -731,8 +820,6 @@ $formattedHosts
 
   kibana:
     image: docker.elastic.co/kibana/kibana-oss:7.10.1
-    volumes:
-      - /dev/log:/dev/log
     environment:
       - SERVER_NAME=scaleout
       - ELASTICSEARCH_HOSTS=http://es01:9200
@@ -742,6 +829,8 @@ $formattedHosts
       internal:
         ipv4_address: "${Subnet}.1.18"
         ipv6_address: "${Subnet6}1:18"
+    volumes:
+      - ./logs:/var/log/containers
     ports:
       - 5601:5601
     depends_on:
@@ -750,7 +839,13 @@ $formattedHosts
       - "es03"
     tty: true
     logging:
-      driver: local
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN
@@ -760,77 +855,49 @@ $formattedHosts
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
+
+volumes:
+  root-home:
+  home:
+  etc-ssh:
+  cluster-etc-slurm:
+  slurmctld:
+  elastic_data01:
+  elastic_data02:
+  elastic_data03:
+  mail:
+  auth:
+  xdmod:
+  src:
+  container-shared:
+
+networks:
+  internal:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: 'true'
+      com.docker.network.bridge.enable_icc: 'true'
+    internal: false
+    enable_ipv6: true
+    ipam:
+      driver: default
+      config:
+        - subnet: ${Subnet}.0.0/16
+        - subnet: ${Subnet6}0/64
 "@
 
-# Add compute nodes
-0..$NodesCount | ForEach-Object {
-    $i = $_
-    $nodeName = "node{0:D2}" -f $i
-    $ipv6Suffix = $i + 10
-    $nodeContent = @"
+    # Create logs directory if it doesn't exist
+    if (-not (Test-Path "logs")) {
+        New-Item -ItemType Directory -Path "logs" | Out-Null
+    }
 
-  ${nodeName}:
-    image: scaleout:latest
-    environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
-      - container=docker
-      - SLURM_FEDERATION_CLUSTER=cluster
-    hostname: ${nodeName}
-    networks:
-      internal:
-        ipv4_address: "${Subnet}.5.$($i + 10)"
-        ipv6_address: "${Subnet6}5:${ipv6Suffix}"
-    volumes:
-      - root-home:/root
-      - etc-ssh:/etc/ssh
-      - cluster-etc-slurm:/etc/slurm
-      - home:/home/
-      - mail:/var/spool/mail/
-      - src:/usr/local/src/
-      - container-shared:/srv/containers
-      - /etc/localtime:/etc/localtime:ro
-      - /run/
-      - /run/lock/
-      - /sys/
-      - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-      - /sys/fs/cgroup/docker.slice/:/sys/fs/cgroup/docker.slice/:rw
-      - /sys/fs/fuse/:/sys/fs/fuse/:rw
-      - /tmp/
-      - /var/lib/journal
-    ulimits:
-      nproc:
-        soft: 65535
-        hard: 65535
-      nofile:
-        soft: 131072
-        hard: 131072
-      memlock:
-        soft: -1
-        hard: -1
-    tty: true
-    logging:
-      driver: local
-    cap_add:
-      - SYS_PTRACE
-      - SYS_ADMIN
-      - MKNOD
-      - SYS_NICE
-      - SYS_RESOURCE
-    security_opt:
-      - seccomp:unconfined
-      - apparmor:unconfined
-    depends_on:
-      - "mgmtnode"
-    extra_hosts:
-$formattedHosts
-"@
-    $composeContent += $nodeContent
+    # Write the docker-compose.yml file
+    $yamlContent | Out-File -FilePath "docker-compose.yml" -Encoding UTF8
+    Write-Host "Generated docker-compose.yml" -ForegroundColor Green
 }
 
-# Write docker-compose.yml
-$composeContent | Set-Content "docker-compose.yml"
+# Main execution
+$NodesCount = if ($SlurmBenchmark) { 100 } else { 9 }
 
-# Output the generated YAML for debugging
-Write-Host "Generated docker-compose.yml content:"
-Write-Host $composeContent 
+# Generate Docker Compose configuration
+Generate-DockerCompose -Subnet $Subnet -Subnet6 $Subnet6 -Nodelist $Nodelist -SlurmBenchmark $SlurmBenchmark -Federation $Federation 

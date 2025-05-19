@@ -12,11 +12,8 @@ if (-not $script:ScriptPath) {
     $script:ScriptPath = $PSCommandPath
 }
 
-# Function to write debug information
-function Write-DebugInfo {
-    param([string]$Message)
-    Write-Host "[DEBUG] $Message" -ForegroundColor Gray
-}
+# Initialize exit code
+$script:ExitCode = 0
 
 # Function to keep window open
 function Keep-WindowOpen {
@@ -64,7 +61,7 @@ trap {
 }
 
 # Now that all functions are defined, we can use them
-Write-DebugInfo "Changed to directory: $(Get-Location)"
+Write-Debug "Changed to directory: $(Get-Location)"
 Set-Location $script:OriginalLocation
 
 # Function to verify administrator access
@@ -82,9 +79,9 @@ function Test-AdminAccess {
 # Function to check if a command exists
 function Test-CommandExists {
     param([string]$Command)
-    Write-DebugInfo "Checking if command exists: $Command"
+    Write-Debug "Checking if command exists: $Command"
     $exists = [bool](Get-Command $Command -ErrorAction SilentlyContinue)
-    Write-DebugInfo "Command exists: $exists"
+    Write-Debug "Command exists: $exists"
     return $exists
 }
 
@@ -111,7 +108,7 @@ function List-Packages {
 
 # Function to check if Visual Studio Build Tools is installed
 function Test-VisualStudioBuildTools {
-    Write-DebugInfo "Checking for Visual Studio Build Tools installation..."
+    Write-Debug "Checking for Visual Studio Build Tools installation..."
     
     # Check common installation paths
     $vsPaths = @(
@@ -121,7 +118,7 @@ function Test-VisualStudioBuildTools {
     
     foreach ($path in $vsPaths) {
         if (Test-Path $path) {
-            Write-DebugInfo "Found Visual Studio Build Tools at: $path"
+            Write-Debug "Found Visual Studio Build Tools at: $path"
             return $true
         }
     }
@@ -131,21 +128,21 @@ function Test-VisualStudioBuildTools {
     if (Test-Path $vswhere) {
         $vsInstallations = & $vswhere -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
         if ($vsInstallations) {
-            Write-DebugInfo "Found Visual Studio Build Tools using vswhere"
+            Write-Debug "Found Visual Studio Build Tools using vswhere"
             return $true
         }
     }
     
-    Write-DebugInfo "Visual Studio Build Tools not found"
+    Write-Debug "Visual Studio Build Tools not found"
     return $false
 }
 
 # Function to update git submodules
 function Update-Submodules {
-    Write-DebugInfo "Starting Update-Submodules function..."
+    Write-Debug "Starting Update-Submodules function..."
     try {
-        Write-DebugInfo "Current directory: $(Get-Location)"
-        Write-DebugInfo "Checking for git installation..."
+        Write-Debug "Current directory: $(Get-Location)"
+        Write-Debug "Checking for git installation..."
         
         if (-not (Test-CommandExists git)) {
             Write-Host "Git is not installed. Attempting to install Git..."
@@ -153,10 +150,10 @@ function Update-Submodules {
             if (Test-CommandExists winget) {
                 Write-Host "Installing Git using winget..."
                 try {
-                    Write-DebugInfo "Running winget install for Git..."
-                    $wingetOutput = winget install -e --id Git.Git 2>&1
-                    Write-DebugInfo "Winget output: $wingetOutput"
-                    Write-DebugInfo "Git installation completed"
+                    Write-Debug "Running winget install for Git..."
+                    $wingetOutput = winget install -e --id Git.Git 2>$null
+                    Write-Debug "Winget output: $wingetOutput"
+                    Write-Debug "Git installation completed"
                 }
                 catch {
                     Write-Error "Failed to install Git. Error: $($_.Exception.Message)"
@@ -164,7 +161,7 @@ function Update-Submodules {
                 }
                 
                 # Refresh environment variables
-                Write-DebugInfo "Refreshing environment variables..."
+                Write-Debug "Refreshing environment variables..."
                 $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
                 
                 if (-not (Test-CommandExists git)) {
@@ -179,7 +176,7 @@ function Update-Submodules {
             }
         }
 
-        Write-DebugInfo "Checking for .git directory..."
+        Write-Debug "Checking for .git directory..."
         if (-not (Test-Path .git)) {
             Write-Error "Error: Not a git repository. Please run this script from the repository root."
             Write-Host "Current directory: $(Get-Location)" -ForegroundColor Red
@@ -188,9 +185,9 @@ function Update-Submodules {
         }
 
         Write-Host "Updating git submodules..."
-        Write-DebugInfo "Running git submodule update..."
-        $gitOutput = git submodule update --init --force --remote --recursive 2>&1
-        Write-DebugInfo "Git output: $gitOutput"
+        Write-Debug "Running git submodule update..."
+        $gitOutput = git submodule update --init --force --remote --recursive 2>$null
+        Write-Debug "Git output: $gitOutput"
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Error: Failed to update git submodules. Exit code: $LASTEXITCODE"
@@ -207,7 +204,7 @@ function Update-Submodules {
 
 # Function to install required packages
 function Install-RequiredPackages {
-    Write-DebugInfo "Starting Install-RequiredPackages function..."
+    Write-Debug "Starting Install-RequiredPackages function..."
     Write-Host "Installing required packages..."
 
     if (Test-CommandExists winget) {
@@ -220,9 +217,9 @@ function Install-RequiredPackages {
                 Write-Host "Docker Desktop is already installed" -ForegroundColor Green
             } else {
                 # Install Docker Desktop
-                Write-DebugInfo "Installing Docker Desktop..."
-                $dockerOutput = winget install -e --id Docker.DockerDesktop 2>&1
-                Write-DebugInfo "Docker Desktop installation output: $dockerOutput"
+                Write-Debug "Installing Docker Desktop..."
+                $dockerOutput = winget install -e --id Docker.DockerDesktop 2>$null
+                Write-Debug "Docker Desktop installation output: $dockerOutput"
                 if ($LASTEXITCODE -ne 0) {
                     # Check if the error is because Docker is already installed
                     if ($dockerOutput -match "Found an existing package already installed") {
@@ -234,9 +231,9 @@ function Install-RequiredPackages {
             }
             
             # Install Python
-            Write-DebugInfo "Installing Python..."
-            $pythonOutput = winget install -e --id Python.Python.3.11 2>&1
-            Write-DebugInfo "Python installation output: $pythonOutput"
+            Write-Debug "Installing Python..."
+            $pythonOutput = winget install -e --id Python.Python.3.11 2>$null
+            Write-Debug "Python installation output: $pythonOutput"
             if ($LASTEXITCODE -ne 0) {
                 # Check if Python is already installed
                 if ($pythonOutput -match "Found an existing package already installed") {
@@ -247,20 +244,20 @@ function Install-RequiredPackages {
             }
             
             # Install jq manually
-            Write-DebugInfo "Installing jq..."
+            Write-Debug "Installing jq..."
             $jqUrl = "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe"
             $jqPath = "$env:ProgramFiles\jq\jq.exe"
             $jqDir = "$env:ProgramFiles\jq"
             
             # Create jq directory if it doesn't exist
             if (-not (Test-Path $jqDir)) {
-                Write-DebugInfo "Creating jq directory..."
+                Write-Debug "Creating jq directory..."
                 New-Item -ItemType Directory -Path $jqDir -Force | Out-Null
             }
             
             # Download jq if not already present
             if (-not (Test-Path $jqPath)) {
-                Write-DebugInfo "Downloading jq..."
+                Write-Debug "Downloading jq..."
                 Invoke-WebRequest -Uri $jqUrl -OutFile $jqPath
             } else {
                 Write-Host "jq is already installed" -ForegroundColor Green
@@ -269,17 +266,17 @@ function Install-RequiredPackages {
             # Add jq to PATH if not already present
             $currentPath = [Environment]::GetEnvironmentVariable("Path", "Machine")
             if (-not $currentPath.Contains($jqDir)) {
-                Write-DebugInfo "Adding jq to PATH..."
+                Write-Debug "Adding jq to PATH..."
                 [Environment]::SetEnvironmentVariable("Path", "$currentPath;$jqDir", "Machine")
                 $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine")
             }
             
             # Install build tools if not already installed
-            Write-DebugInfo "Checking Visual Studio Build Tools installation..."
+            Write-Debug "Checking Visual Studio Build Tools installation..."
             if (-not (Test-VisualStudioBuildTools)) {
                 Write-Host "Installing Visual Studio Build Tools 2022..." -ForegroundColor Yellow
-                $vsInstall = winget install -e --id Microsoft.VisualStudio.2022.BuildTools --accept-source-agreements --accept-package-agreements 2>&1
-                Write-DebugInfo "Visual Studio Build Tools installation output: $vsInstall"
+                $vsInstall = winget install -e --id Microsoft.VisualStudio.2022.BuildTools --accept-source-agreements --accept-package-agreements 2>$null
+                Write-Debug "Visual Studio Build Tools installation output: $vsInstall"
                 
                 if ($LASTEXITCODE -ne 0) {
                     # Check if Build Tools are already installed
@@ -295,7 +292,7 @@ function Install-RequiredPackages {
             }
 
             # Refresh environment variables after installations
-            Write-DebugInfo "Refreshing environment variables..."
+            Write-Debug "Refreshing environment variables..."
             $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
         }
         catch {
@@ -317,15 +314,15 @@ function Install-RequiredPackages {
     Write-Host "Verifying installations..."
     $requiredCommands = @("docker", "python", "jq")
     foreach ($cmd in $requiredCommands) {
-        Write-DebugInfo "Checking installation of $cmd..."
+        Write-Debug "Checking installation of $cmd..."
         try {
             # Try to get the command path first
             $cmdPath = Get-Command $cmd -ErrorAction Stop
-            Write-DebugInfo "Found $cmd at: $($cmdPath.Source)"
+            Write-Debug "Found $cmd at: $($cmdPath.Source)"
             
             # Then try to get the version
-            $version = & $cmd --version 2>&1
-            Write-DebugInfo "$cmd version: $version"
+            $version = Invoke-Expression "$cmd --version" 2>$null
+            Write-Debug "$cmd version: $version"
             
             if ($LASTEXITCODE -ne 0) {
                 throw "$cmd installation verification failed. Exit code: $LASTEXITCODE"
@@ -342,30 +339,45 @@ function Install-RequiredPackages {
     }
 }
 
+# Function to verify Docker is running and accessible
+function Test-DockerRunning {
+    Write-Debug "Verifying Docker is running and accessible..."
+    
+    try {
+        # Check if Docker is responding to commands using PowerShell native commands
+        $dockerInfo = & docker info
+        if ($?) {
+            Write-Debug "Docker is running and accessible"
+            return $true
+        }
+
+        Write-Debug "Docker info check failed"
+        return $false
+    }
+    catch {
+        Write-Debug "Error checking Docker status: $($_.Exception.Message)"
+        return $false
+    }
+}
+
 # Function to configure Docker
 function Configure-Docker {
-    Write-DebugInfo "Starting Configure-Docker function..."
+    Write-Debug "Starting Configure-Docker function..."
     Write-Host "Configuring Docker..."
 
     # Check if Docker is running and responding
-    try {
-        $dockerInfo = docker info 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Docker is already running and responding" -ForegroundColor Green
-            return
-        }
-    }
-    catch {
-        Write-DebugInfo "Docker is not responding, attempting to restart..."
+    if (Test-DockerRunning) {
+        Write-Host "Docker is already running and responding" -ForegroundColor Green
+        return
     }
 
     # Only restart if Docker is not responding
-    Write-DebugInfo "Restarting Docker Desktop..."
+    Write-Debug "Docker is not responding, attempting to restart..."
     try {
         Stop-Process -Name "Docker Desktop" -Force -ErrorAction SilentlyContinue
         Start-Sleep -Seconds 5
         Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-        Write-DebugInfo "Docker Desktop restarted successfully"
+        Write-Debug "Docker Desktop restarted successfully"
     }
     catch {
         Write-Error "Failed to restart Docker Desktop. Error: $($_.Exception.Message)"
@@ -375,7 +387,7 @@ function Configure-Docker {
 
 # Function to ensure Docker is running
 function Ensure-DockerRunning {
-    Write-DebugInfo "Starting Ensure-DockerRunning function..."
+    Write-Debug "Starting Ensure-DockerRunning function..."
     Write-Host "Ensuring Docker is running..."
 
     # Check if Docker Desktop is installed
@@ -385,79 +397,54 @@ function Ensure-DockerRunning {
         exit 1
     }
 
-    # Check if Docker Desktop is running
-    $dockerProcess = Get-Process "Docker Desktop" -ErrorAction SilentlyContinue
-    if (-not $dockerProcess) {
-        Write-Host "Docker Desktop is not running. Starting it..." -ForegroundColor Yellow
-        try {
-            Start-Process $dockerPath
-            Write-DebugInfo "Docker Desktop started"
-        }
-        catch {
-            Write-Error "Failed to start Docker Desktop. Error: $($_.Exception.Message)"
-            exit 1
-        }
-        
-        # Wait for Docker to be ready
-        Write-DebugInfo "Waiting for Docker to be ready..."
-        $attempts = 0
-        $maxAttempts = 60  # Increased timeout to 60 seconds
-        while ($attempts -lt $maxAttempts) {
-            try {
-                $dockerInfo = docker info 2>&1
-                Write-DebugInfo "Docker info attempt ${attempts} - Output: $dockerInfo"
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Host "Docker Desktop started successfully" -ForegroundColor Green
-                    break
-                }
-            }
-            catch {
-                Write-DebugInfo "Docker check attempt ${attempts} failed: $($_.Exception.Message)"
-            }
-            $attempts++
-            Write-DebugInfo "Waiting for Docker to start... Attempt ${attempts} of ${maxAttempts}"
-            Start-Sleep -Seconds 1
-        }
-        
-        if ($attempts -ge $maxAttempts) {
-            Write-Error "Docker Desktop failed to start within $maxAttempts seconds"
-            Write-Host "Please check Docker Desktop status and try again"
-            exit 1
-        }
-    }
-    else {
-        Write-Host "Docker Desktop is already running" -ForegroundColor Green
+    # Check if Docker is already running
+    if (Test-DockerRunning) {
+        Write-Host "Docker is already running and responding" -ForegroundColor Green
+        return
     }
 
-    # Verify Docker is working by running a simple command
+    # Start Docker Desktop if not running
+    Write-Host "Docker Desktop is not running. Starting it..." -ForegroundColor Yellow
     try {
-        Write-DebugInfo "Checking Docker version..."
-        $dockerVersion = docker version 2>&1
-        Write-DebugInfo "Docker version output: $dockerVersion"
-        
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Docker is running and accessible" -ForegroundColor Green
-            return
-        }
-        
-        Write-DebugInfo "Version check failed, trying docker info..."
-        $dockerInfo = docker info 2>&1
-        Write-DebugInfo "Docker info output: $dockerInfo"
-        
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Docker is running and accessible" -ForegroundColor Green
-            return
-        }
-        
-        Write-Error "Docker is not responding to commands"
-        Write-Error "Docker version output: $dockerVersion"
-        Write-Error "Docker info output: $dockerInfo"
-        Write-Error "Please ensure Docker Desktop is properly installed and running"
-        exit 1
+        Start-Process $dockerPath
+        Write-Debug "Docker Desktop started"
     }
     catch {
-        Write-Error "Error checking Docker status: $($_.Exception.Message)"
-        Write-Error "Please ensure Docker Desktop is properly installed and running"
+        Write-Error "Failed to start Docker Desktop. Error: $($_.Exception.Message)"
+        exit 1
+    }
+    
+    # Wait for Docker to be ready with improved retry logic
+    Write-Debug "Waiting for Docker to be ready..."
+    $attempts = 0
+    $maxAttempts = 60  # 60 seconds timeout
+    $success = $false
+    
+    while ($attempts -lt $maxAttempts -and -not $success) {
+        if (Test-DockerRunning) {
+            $success = $true
+            Write-Host "Docker is responding to commands" -ForegroundColor Green
+            break
+        }
+        
+        $attempts++
+        Write-Debug "Waiting for Docker to initialize... Attempt ${attempts} of ${maxAttempts}"
+        
+        # If we've waited 10 seconds and Docker still isn't responding, try restarting it
+        if ($attempts -eq 10) {
+            Write-Host "Docker is not responding after 30 seconds. Attempting to restart Docker Desktop..." -ForegroundColor Yellow
+            Stop-Process -Name "Docker Desktop" -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 5
+            Start-Process $dockerPath
+            $attempts = 0  # Reset attempts after restart
+        }
+        
+        Start-Sleep -Seconds 3
+    }
+    
+    if (-not $success) {
+        Write-Error "Docker Desktop failed to initialize within $maxAttempts seconds"
+        Write-Host "Please check Docker Desktop status and try again"
         exit 1
     }
 }
@@ -468,14 +455,14 @@ function Test-DockerLogin {
     
     # First check if we're already logged in
     try {
-        $loginStatus = docker info 2>&1 | Select-String "Username"
+        $loginStatus = Invoke-Expression "docker info" | Select-String "Username"
         if ($loginStatus) {
             Write-Host "Already logged in to Docker Hub" -ForegroundColor Green
             return $true
         }
     }
     catch {
-        Write-DebugInfo "Docker info check failed: $($_.Exception.Message)"
+        Write-Debug "Docker info check failed: $($_.Exception.Message)"
     }
     
     # If not logged in, prompt for credentials
@@ -501,8 +488,8 @@ function Test-DockerLogin {
     # Attempt to login
     Write-Host "Logging in to Docker Hub..."
     try {
-        $loginOutput = $dockerPassword | docker login -u $dockerUsername --password-stdin 2>&1
-        Write-DebugInfo "Docker login output: $loginOutput"
+        $loginOutput = $dockerPassword | Invoke-Expression "docker login -u $dockerUsername --password-stdin" | Out-String
+        Write-Debug "Docker login output: $loginOutput"
         
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Error: Docker login failed"
@@ -520,9 +507,61 @@ function Test-DockerLogin {
     }
 }
 
+# Function to start Docker Desktop
+function Start-DockerDesktop {
+    Write-Debug "Attempting to start Docker Desktop..."
+    
+    $dockerPaths = @(
+        "C:\Program Files\Docker\Docker\Docker Desktop.exe",
+        "${env:ProgramFiles}\Docker\Docker\Docker Desktop.exe",
+        "${env:ProgramFiles(x86)}\Docker\Docker\Docker Desktop.exe"
+    )
+
+    $dockerPath = $dockerPaths | Where-Object { Test-Path $_ } | Select-Object -First 1
+    
+    if (-not $dockerPath) {
+        Write-Error "Docker Desktop not found in expected locations"
+        return $false
+    }
+
+    try {
+        Start-Process $dockerPath
+        Write-Host "Docker Desktop starting..." -ForegroundColor Yellow
+        
+        # Wait for Docker to be ready
+        $attempts = 0
+        $maxAttempts = 60
+        while ($attempts -lt $maxAttempts) {
+            if (Test-DockerRunning) {
+                Write-Host "Docker Desktop started successfully" -ForegroundColor Green
+                return $true
+            }
+            $attempts++
+            Write-Debug "Waiting for Docker to start... Attempt ${attempts} of ${maxAttempts}"
+            Start-Sleep -Seconds 1
+        }
+        
+        Write-Error "Docker Desktop failed to start within $maxAttempts seconds"
+        return $false
+    }
+    catch {
+        Write-Error "Failed to start Docker Desktop: $($_.Exception.Message)"
+        return $false
+    }
+}
+
 # Function to perform the build
 function Start-Build {
     Write-Host "Starting build process..." -ForegroundColor Cyan
+
+    # First verify Docker is running
+    if (-not (Test-DockerRunning)) {
+        Write-Host "Docker is not running. Attempting to start Docker Desktop..." -ForegroundColor Yellow
+        if (-not (Start-DockerDesktop)) {
+            Write-Error "Failed to start Docker Desktop. Please start it manually and try again."
+            exit 1
+        }
+    }
 
     # Check if we're in the correct directory
     Write-Host "Checking for Makefile.win..." -ForegroundColor Yellow
@@ -658,7 +697,7 @@ function Start-Build {
     foreach ($image in $requiredImages) {
         Write-Host "Checking for image: $image" -ForegroundColor Gray
         try {
-            $imageInfo = docker image inspect $image 2>&1
+            $imageInfo = Invoke-Expression "docker image inspect $image" | Out-String
             Write-Host "Image $image found successfully" -ForegroundColor Green
             Write-Host "Image details: $imageInfo" -ForegroundColor Gray
         }
@@ -697,72 +736,34 @@ function Start-Build {
         # First try to run docker compose directly to see if it works
         Write-Host "`nTesting docker compose directly..." -ForegroundColor Yellow
         Write-Host "Running: docker compose ps" -ForegroundColor Gray
-        $composeTest = docker compose ps 2>&1
+        $composeTest = Invoke-Expression "docker compose ps" | Out-String
         Write-Host "Docker compose test output:" -ForegroundColor Gray
         Write-Host $composeTest
         
         # Check Docker status before proceeding
         Write-Host "`nChecking Docker status before make up..." -ForegroundColor Yellow
         Write-Host "Running: docker info" -ForegroundColor Gray
-        $dockerStatus = docker info 2>&1
+        $dockerStatus = Invoke-Expression "docker info" | Out-String
         Write-Host "Docker info:" -ForegroundColor Gray
         Write-Host $dockerStatus
         
         # Now try the make command with detailed output
         Write-Host "`nRunning make up..." -ForegroundColor Yellow
         Write-Host "Current directory: $(Get-Location)" -ForegroundColor Gray
-        Write-Host "Directory contents:" -ForegroundColor Gray
-        Get-ChildItem -Force | Format-Table Name, Length, LastWriteTime
-        
-        # Run make with detailed output
         Write-Host "`nRunning: make -f Makefile.win up" -ForegroundColor Gray
-        $makeOutput = & make -f Makefile.win up 2>&1
+        
+        # Run make up and capture output
+        $makeOutput = Invoke-Expression "make -f Makefile.win up" | Out-String
         Write-Host "Make command output:" -ForegroundColor Gray
         Write-Host $makeOutput
         
-        if ($LASTEXITCODE -ne 0) {
-            # Check Docker status
-            Write-Host "`nChecking Docker status after failure..." -ForegroundColor Yellow
-            Write-Host "Running: docker info" -ForegroundColor Gray
-            $dockerStatus = docker info 2>&1
-            Write-Host "Docker info:" -ForegroundColor Gray
-            Write-Host $dockerStatus
-            
-            # Check if containers are running
-            Write-Host "`nChecking container status..." -ForegroundColor Yellow
-            Write-Host "Running: docker ps -a" -ForegroundColor Gray
-            $containers = docker ps -a 2>&1
-            Write-Host "Container status:" -ForegroundColor Gray
-            Write-Host $containers
-            
-            # Check Docker logs
-            Write-Host "`nChecking Docker logs..." -ForegroundColor Yellow
-            Write-Host "Running: docker logs" -ForegroundColor Gray
-            $dockerLogs = docker logs $(docker ps -aq) 2>&1
-            Write-Host "Docker logs:" -ForegroundColor Gray
-            Write-Host $dockerLogs
-            
-            # Try to run docker compose up directly to see the error
-            Write-Host "`nTrying docker compose up directly..." -ForegroundColor Yellow
-            Write-Host "Running: docker compose up -d" -ForegroundColor Gray
-            $composeUp = docker compose up -d 2>&1
-            Write-Host "Docker compose up output:" -ForegroundColor Gray
-            Write-Host $composeUp
-            
-            # Show the actual error
-            Write-Host "`nMake command failed with output:" -ForegroundColor Red
-            Write-Host $makeOutput
-            
-            throw "Start command failed with exit code $LASTEXITCODE"
-        }
-        
-        # Verify containers are running
+        # Check if containers are running
         Write-Host "`nVerifying container status..." -ForegroundColor Yellow
-        Write-Host "Running: docker ps" -ForegroundColor Gray
-        $runningContainers = docker ps --format "{{.Names}}: {{.Status}}"
+        $runningContainers = Invoke-Expression 'docker ps --format "{{.Names}}: {{.Status}}"' | Out-String
         Write-Host "Running containers:" -ForegroundColor Green
         Write-Host $runningContainers
         
+        # If we get here, the command was successful
         Write-Host "Cluster started successfully" -ForegroundColor Green
     }
     catch {
@@ -799,7 +800,7 @@ function Invoke-Cleanup {
         Write-Host "Build failed with exit code $ExitCode" -ForegroundColor Red
         Write-Host "Attempting to clean up..." -ForegroundColor Yellow
         try {
-            $cleanupOutput = make -f Makefile.win clean 2>&1
+            $cleanupOutput = make -f Makefile.win clean 2>$null
             Write-Host "Cleanup output: $cleanupOutput" -ForegroundColor Gray
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "Cleanup failed with exit code $LASTEXITCODE"
@@ -812,6 +813,38 @@ function Invoke-Cleanup {
     }
     exit $ExitCode
 }
+
+# Function to handle 'make host' command
+function Connect-ToHost {
+    param(
+        [string]$HostName
+    )
+    
+    $containerName = "docker-scale-out-${HostName}-1"
+    
+    # Check if container exists
+    $container = docker ps -a --filter "name=$containerName" --format "{{.Names}}"
+    if (-not $container) {
+        Write-Error "Container for host '$HostName' not found. Available containers:"
+        docker ps --format "{{.Names}}"
+        return
+    }
+    
+    # Check if container is running
+    $status = docker ps --filter "name=$containerName" --format "{{.Status}}"
+    if (-not $status) {
+        Write-Error "Container $containerName is not running. Current status:"
+        docker ps -a --filter "name=$containerName" --format "{{.Names}}: {{.Status}}"
+        return
+    }
+    
+    # Connect to the container
+    Write-Host "Connecting to $containerName..." -ForegroundColor Green
+    docker exec -it $containerName bash
+}
+
+# Add alias for make host command
+Set-Alias -Name make -Value Connect-ToHost -Force
 
 # Main execution
 try {
@@ -842,6 +875,19 @@ try {
 
     # If we get here, everything succeeded
     Write-Host "`nSetup process completed successfully!" -ForegroundColor Green
+    
+    # Display connection instructions
+    Write-Host "`nTo connect to the login node, you can use either of these methods:" -ForegroundColor Cyan
+    Write-Host "1. Using the 'make' command:" -ForegroundColor Yellow
+    Write-Host "   make login" -ForegroundColor White
+    Write-Host "2. Using Docker directly:" -ForegroundColor Yellow
+    Write-Host "   docker exec -it docker-scale-out-login-1 bash" -ForegroundColor White
+    Write-Host "`nNote: The login node is accessible at:" -ForegroundColor Cyan
+    Write-Host "   - IPv4: ${Subnet}.1.5" -ForegroundColor White
+    Write-Host "   - IPv6: ${Subnet6}1:5" -ForegroundColor White
+    Write-Host "   - Hostname: login" -ForegroundColor White
+    
+    $script:ExitCode = 0
     Keep-WindowOpen
 }
 catch {
@@ -851,8 +897,8 @@ catch {
     Write-Host "Line Number: $($_.InvocationInfo.Line)" -ForegroundColor Red
     Write-Host "Script Name: $($_.InvocationInfo.ScriptName)" -ForegroundColor Red
     Write-Host "Stack Trace: $($_.ScriptStackTrace)" -ForegroundColor Red
+    $script:ExitCode = 1
     Keep-WindowOpen
-    exit 1
 }
 finally {
     Write-Host "`nPerforming final cleanup..." -ForegroundColor Yellow

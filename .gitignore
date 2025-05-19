@@ -5,3 +5,4 @@ scaleout/patch.d/*.patch
 cloud_socket
 scaleout.tar
 federation
+logs

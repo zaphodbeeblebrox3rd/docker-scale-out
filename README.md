@@ -7,109 +7,19 @@ Docker compose cluster for testing Slurm
 
 { .is-info }
 
-## Automated Setup
-Run the setup.sh script
+## Automated Setup on Linux
+Run the setup.sh script.
 ```
 chmod +x setup_1.sh
 chmod +x setup_2.sh
 ./setup_1.sh
 ```
 
-## Prerequisites
-This section is for reference only if the setup.sh script ran to completion successfully.
-  * docker (25.x.x+ with cgroupsv2 or 24.x.x with cgroupsv1)
-    * IPv6 must be configured in docker: https://docs.docker.com/config/daemon/ipv6/
-  * docker-compose-plugin v2.18.1+
-  * ssh (client)
-  * jq
-  * python3
-    * python3-daemon
-
-## Changes needed in sysctl.conf:
-This section is for reference only if the setup.sh script ran to completion successfully.
-
-Run this codeblock for the necessary network reconfiguration.
-
+## Automated Setup on Windows
+Run the setup_win powershell script.
 ```
-net.ipv4.tcp_max_syn_backlog=4096
-net.core.netdev_max_backlog=1000
-net.core.somaxconn=15000
-
-# Force gc to clean-up quickly
-net.ipv4.neigh.default.gc_interval = 3600
-
-# Set ARP cache entry timeout
-net.ipv4.neigh.default.gc_stale_time = 3600
-
-# Setup DNS threshold for arp
-net.ipv4.neigh.default.gc_thresh3 = 8096
-net.ipv4.neigh.default.gc_thresh2 = 4048
-net.ipv4.neigh.default.gc_thresh1 = 1024
-
-# Increase map count for elasticsearch
-vm.max_map_count=262144
-
-# Avoid running out of file descriptors
-fs.file-max=10000000
-fs.inotify.max_user_instances=65535
-fs.inotify.max_user_watches=1048576
-
-#Request kernel max number of cgroups
-fs.inotify.max_user_instances=65535
+./setup_win.ps1
 ```
-
-## Docker configuration required with cgroupsv2
-This section is for reference only if the setup.sh script ran to completion successfully.
-
-Make sure the host machine is running CgroupV2 and not hybrid mode:
-	https://slurm.schedmd.com/faq.html#cgroupv2
-
-Add these settings to the docker configuration: /etc/docker/daemon.json
-```
-{
-  "exec-opts": [
-    "native.cgroupdriver=systemd"
-  ],
-  "features": {
-    "buildkit": true
-  },
-  "experimental": true,
-  "cgroup-parent": "docker.slice",
-  "default-cgroupns-mode": "host",
-  "storage-driver": "overlay2"
-}
-```
-
-Configure systemd to allow docker to run in it's own slice to avoid systemd
-conflicting with it:
-
-/etc/systemd/system/docker.slice:
-```
-[Unit]
-Description=docker slice
-Before=slices.target
-[Slice]
-CPUAccounting=true
-MemoryAccounting=true
-Delegate=yes
-```
-
-/usr/lib/systemd/system/docker.service.d/local.conf:
-```
-[Service]
-LimitNOFILE=infinity
-LimitNPROC=infinity
-LimitCORE=infinity
-TasksMax=infinity
-Delegate=yes
-```
-
-Activate the changes:
-```
-systemctl daemon-reload
-systemctl restart docker.slice docker
-```
-
 ## Basic Architecture
 
 Maria Database Node:
@@ -160,11 +70,107 @@ Keycloak
   * User: admin
   * Password: password
 
-## Multiple Instances
-Each cluster must have a unique class B subnet.
 
-Default IPv4 is SUBNET="10.11".
-Default IPv6 is SUBNET6="2001:db8:1:1::".
+
+
+## Prerequisites
+This section is for reference only if the setup.sh script ran to completion successfully.
+  * docker (25.x.x+ with cgroupsv2 or 24.x.x with cgroupsv1)
+    * IPv6 must be configured in docker: https://docs.docker.com/config/daemon/ipv6/
+  * docker-compose-plugin v2.18.1+
+  * ssh (client)
+  * jq
+  * python3
+    * python3-daemon
+
+## Manual Changes (for reference only)
+These sections are for reference only if the setup script for your OS ran to completion successfully.
+
+### Changes needed in sysctl.conf:
+
+
+Run this codeblock for the necessary network reconfiguration.
+
+```
+net.ipv4.tcp_max_syn_backlog=4096
+net.core.netdev_max_backlog=1000
+net.core.somaxconn=15000
+
+# Force gc to clean-up quickly
+net.ipv4.neigh.default.gc_interval = 3600
+
+# Set ARP cache entry timeout
+net.ipv4.neigh.default.gc_stale_time = 3600
+
+# Setup DNS threshold for arp
+net.ipv4.neigh.default.gc_thresh3 = 8096
+net.ipv4.neigh.default.gc_thresh2 = 4048
+net.ipv4.neigh.default.gc_thresh1 = 1024
+
+# Increase map count for elasticsearch
+vm.max_map_count=262144
+
+# Avoid running out of file descriptors
+fs.file-max=10000000
+fs.inotify.max_user_instances=65535
+fs.inotify.max_user_watches=1048576
+
+#Request kernel max number of cgroups
+fs.inotify.max_user_instances=65535
+```
+
+### Manual Docker configuration required with cgroupsv2 for reference
+
+Make sure the host machine is running CgroupV2 and not hybrid mode:
+	https://slurm.schedmd.com/faq.html#cgroupv2
+
+Add these settings to the docker configuration: /etc/docker/daemon.json
+```
+{
+  "exec-opts": [
+    "native.cgroupdriver=systemd"
+  ],
+  "features": {
+    "buildkit": true
+  },
+  "experimental": true,
+  "cgroup-parent": "docker.slice",
+  "default-cgroupns-mode": "host",
+  "storage-driver": "overlay2"
+}
+```
+
+Configure systemd to allow docker to run in it's own slice to avoid systemd
+conflicting with it:
+
+/etc/systemd/system/docker.slice:
+```
+[Unit]
+Description=docker slice
+Before=slices.target
+[Slice]
+CPUAccounting=true
+MemoryAccounting=true
+Delegate=yes
+```
+
+/usr/lib/systemd/system/docker.service.d/local.conf:
+```
+[Service]
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+TasksMax=infinity
+Delegate=yes
+```
+
+Activate the changes:
+```
+systemctl daemon-reload
+systemctl restart docker.slice docker
+```
+
+
 
 ## Custom Nodes
 
@@ -183,6 +189,12 @@ the following subnets:
 > ${SUBNET}.1.0/24
 > ${SUBNET6}1:0/122
 
+## Multiple Instances
+Each cluster must have a unique class B subnet.
+
+Default IPv4 is SUBNET="10.11".
+Default IPv6 is SUBNET6="2001:db8:1:1::".
+
 ## Custom Slurm version
 
 To specify an explicit version of Slurm to be compiled and installed:
@@ -191,7 +203,7 @@ To specify an explicit version of Slurm to be compiled and installed:
 Make sure to call `make clean` after to invalidate all the caches with the
 prior release.
 
-## To build images
+### To build images
 
 ```
 git submodule update --init --force --remote --recursive

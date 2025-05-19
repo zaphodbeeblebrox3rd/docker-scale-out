@@ -1,22 +1,96 @@
 FROM almalinux:8
 
 # Install basic requirements
-RUN dnf update -y && dnf install -y \
-    openssh-server \
-    openssh-clients \
-    sudo \
-    which \
-    hostname \
-    iproute \
-    procps-ng \
-    util-linux \
-    && dnf clean all
+RUN dnf -y install 'dnf-command(config-manager)' && \
+    dnf -y install dnf-plugins-core && \
+    dnf config-manager --set-enabled powertools && \
+    dnf -y install --allowerasing --exclude google-chrome-* \
+    rpm gcc automake make perl-macros rpm-build passwd \
+    readline-devel openssl-devel openssl pam-devel \
+    perl-ExtUtils-MakeMaker.noarch mariadb-devel mariadb \
+    glib2-devel gtk2-devel libtool git vim gdb hostname \
+    perl-Switch expect lua-devel rrdtool-devel lz4-devel json-c-devel \
+    libcurl-devel freeipmi-devel numactl-devel lynx numactl \
+    rdma-core-devel gcc-c++ flex libgcrypt-devel gcc-gfortran \
+    strace ltrace gdb wget cmake sudo jansson-devel \
+    openssh-server pam-devel xterm oniguruma-devel xmvn \
+    lua-devel xauth man mailx postfix http-parser-devel \
+    libyaml-devel mlocate gettext-devel texinfo java-21-openjdk-devel \
+    systemd net-tools socat jq squashfs-tools fuse-overlayfs pigz \
+    fuse-devel rpcgen cronie iproute procps-ng \
+    lua-json.noarch rsync crun go gpgme-devel libseccomp-devel \
+    libassuan-devel dbus-devel bash-completion tzdata-java \
+    python3-setuptools-wheel python3-virtualenv python3-urllib3 \
+    python3-six python3-requests python3-pexpect \
+    python3.11 python3.11-pip python3.11-pytest python3.11-requests \
+    bc emacs nano dos2unix
+
+# Install Slurm and dependencies
+RUN git clone --depth 1 --single-branch -b munge-0.5.13 https://github.com/dun/munge.git /usr/local/src/munge/ && \
+    cd /usr/local/src/munge/ && \
+    autoreconf -i && ./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
+    make -j >/dev/null && make install >/dev/null
+
+RUN mkdir -p /etc/slurm /etc/pmix && \
+    git clone --depth 1 --single-branch -b release-2.1.12-stable https://github.com/libevent/libevent.git /usr/local/src/libevent/ && \
+    cd /usr/local/src/libevent && \
+    ./autogen.sh && ./configure --prefix=/usr/local >/dev/null && make -j >/dev/null && make install >/dev/null
+
+RUN git clone --depth 1 --single-branch -b hwloc-2.0.2 https://github.com/open-mpi/hwloc.git /usr/local/src/hwloc/ && \
+    cd /usr/local/src/hwloc && \
+    ./autogen.sh && ./configure --prefix=/usr/local --sysconfdir=/etc/hwloc/ >/dev/null && make -j >/dev/null && make install >/dev/null
+
+RUN git clone --depth 1 --single-branch -b v4.2.2 https://github.com/pmix/pmix.git /usr/local/src/pmix/ && \
+    cd /usr/local/src/pmix && \
+    ./autogen.pl && ./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-devel-headers --with-tests-examples --enable-debug --with-libevent=/usr/local >/dev/null && \
+    make -j >/dev/null && make install >/dev/null
+
+RUN git clone --depth 1 --single-branch -b master https://github.com/SchedMD/slurm.git /usr/local/src/slurm && \
+    cd /usr/local/src/slurm && \
+    git config --global user.email "you@example.com" && \
+    git config --global user.name "scale out" && \
+    git fetch --depth 1 origin slurm-23-02-4-1 && \
+    git checkout FETCH_HEAD && \
+    ./configure --enable-slurmrestd --enable-multiple-slurmd --enable-memory-leak-debug --enable-developer --disable-optimizations --with-munge=/usr/local/ --prefix=/usr/local \
+    --sharedstatedir=/run/slurm/ --with-pmix=/usr/local \
+    --enable-pam --sysconfdir=/etc/slurm >/dev/null && \
+    make -j >/dev/null && make install >/dev/null && make -j install-contrib >/dev/null && \
+    cd contribs && make install && \
+    ln -nfs /usr/local/src/slurm/contribs/slurm_completion_help/slurm_completion.sh /etc/bash_completion.d/slurm_completion.sh
+
+# Setup Slurm user and group
+RUN /usr/sbin/groupadd -r slurm -g 1001 && \
+    /usr/sbin/useradd -c "scheduler daemon" -d "/home/slurm/" -g slurm -s /bin/bash -u 1001 -r slurm && \
+    /usr/sbin/groupadd -r slurmrestd -g 1002 && \
+    /usr/sbin/useradd -c "REST daemon" -d "/etc/slurm" -g slurmrestd -s /bin/bash -u 1002 -r slurmrestd && \
+    echo 'slurm        ALL=(ALL)       NOPASSWD: ALL' >> /etc/sudoers && \
+    mkdir -m 0770 -p /home/slurm && chown slurm:slurm /home/slurm
+
+# Setup MUNGE
+RUN /usr/sbin/groupadd -r munge && \
+    /usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
+    mkdir -m 0700 -p /etc/munge/ && \
+    mkdir -p -m 0700 /var/log/munge && \
+    chown munge:munge -R /var/log/munge /var/run/munge/ && \
+    dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key && \
+    touch /etc/munge/munge.seed && \
+    chown munge:munge -R /etc/munge && \
+    chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed && \
+    chown root:root /etc/munge/ -R && \
+    chown -R munge:munge /etc/munge
+
+# Setup Slurm directories
+RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool /etc/slurm/ && \
+    chown slurm:slurm -R /var/spool/slurm /etc/slurm/
 
 # Set up users and groups
 RUN groupadd -g 1000 ood && \
     useradd -u 1000 -g ood -m -s /bin/bash ood && \
-    groupadd -g 1001 slurm && \
-    useradd -u 1001 -g slurm -m -s /bin/bash slurm
+    groupadd -g 1002 users && \
+    for i in arnold bambam barney betty chip dino edna fred gazoo pebbles wilma; do \
+        useradd -m -g users -s /bin/bash $i && \
+        echo 'password' | passwd $i --stdin; \
+    done
 
 # Create necessary directories
 RUN mkdir -p /var/run/sshd \
@@ -36,7 +110,11 @@ RUN mkdir -p /var/run/sshd \
     /var/spool/slurmdbd/state/state/state/state/state/state/state \
     /var/spool/slurmdbd/state/state/state/state/state/state/state/state \
     /var/spool/slurmdbd/state/state/state/state/state/state/state/state/state \
-    /var/spool/slurmdbd/state/state/state/state/state/state/state/state/state/state
+    /var/spool/slurmdbd/state/state/state/state/state/state/state/state/state/state \
+    /run/systemd/system \
+    /run/user \
+    /var/run/slurm \
+    /usr/local/src
 
 # Set up SSH
 RUN ssh-keygen -A && \
@@ -47,9 +125,23 @@ RUN ssh-keygen -A && \
     echo "PermitRootLogin yes" >> /etc/ssh/sshd_config && \
     echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
 
-# Copy startup script
+# Copy startup script and convert line endings
 COPY startup.sh /sbin/
-RUN chmod +x /sbin/startup.sh
+COPY login.startup.sh slurmdbd.startup.sh slurmrestd.startup.sh slurmctld.startup.sh slurmctld.startup2.sh /usr/local/src/
+RUN chmod 755 /sbin/startup.sh && \
+    dos2unix /sbin/startup.sh && \
+    sed -i 's/\r$//' /sbin/startup.sh && \
+    cat /sbin/startup.sh && \
+    ls -l /sbin/startup.sh && \
+    file /sbin/startup.sh && \
+    head -n 1 /sbin/startup.sh && \
+    chmod 755 /usr/local/src/*.sh && \
+    dos2unix /usr/local/src/*.sh && \
+    sed -i 's/\r$//' /usr/local/src/*.sh && \
+    ls -la /usr/local/src/ && \
+    ls -l /usr/local/src/slurmdbd.startup.sh && \
+    head -n 5 /usr/local/src/slurmdbd.startup.sh && \
+    file /usr/local/src/slurmdbd.startup.sh
 
 # Set up volumes
 VOLUME ["/tmp", "/run", "/run/lock"]
