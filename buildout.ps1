@@ -345,15 +345,13 @@ $formattedHosts
 $formattedHosts
 
   login:
-    build:
-      context: ./login
-      dockerfile: Dockerfile.win
     image: scaleout:latest
     environment:
       - SUBNET="${Subnet}"
       - SUBNET6="${Subnet6}"
       - container=docker
     hostname: login
+    command: ["bash", "-c", "mkdir -p /run/systemd/system && mkdir -p /var/log/munge && chown -R munge:munge /var/log/munge && chmod 700 /var/log/munge && cp /usr/local/src/login.startup.sh /usr/local/src/startup.sh && dos2unix /usr/local/src/startup.sh && chmod +x /usr/local/src/startup.sh && /sbin/startup.sh"]
     networks:
       internal:
         ipv4_address: "${Subnet}.1.5"
@@ -379,6 +377,7 @@ $formattedHosts
       - /tmp/
       - /var/lib/journal
       - ./logs:/var/log/containers
+      - ./scaleout/login.startup.sh:/usr/local/src/login.startup.sh:ro
     tty: true
     logging:
       driver: "json-file"

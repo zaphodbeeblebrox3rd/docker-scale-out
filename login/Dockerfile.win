@@ -1,9 +1,0 @@
-# Use the same base image as the original Dockerfile
-FROM scaleout:latest
-
-# Copy startup.sh into the container
-COPY startup.sh /sbin/startup.sh
-RUN chmod +x /sbin/startup.sh
-
-# Set the entrypoint to startup.sh
-ENTRYPOINT ["/sbin/startup.sh"] 
