@@ -1,3 +1,9 @@
+# Script parameters
+param(
+    [string]$Subnet = "10.11",
+    [string]$Subnet6 = "2001:db8:1:1::"
+)
+
 # Exit on any error
 $ErrorActionPreference = "Stop"
 
@@ -718,7 +724,7 @@ function Start-Build {
     # Start the cluster
     Write-Host "Starting the cluster..." -ForegroundColor Yellow
     try {
-        Write-Host "Running make command..." -ForegroundColor Gray
+        Write-Host "Running docker compose command..." -ForegroundColor Gray
         
         # First verify docker-compose.yml exists
         if (-not (Test-Path "docker-compose.yml")) {
@@ -730,32 +736,22 @@ function Start-Build {
         Write-Host "`nContents of docker-compose.yml:" -ForegroundColor Yellow
         Get-Content "docker-compose.yml" | ForEach-Object { Write-Host $_ -ForegroundColor Gray }
         
-        # Run make and capture both output and error streams
-        Write-Host "`nExecuting make up command..." -ForegroundColor Yellow
-        
-        # First try to run docker compose directly to see if it works
-        Write-Host "`nTesting docker compose directly..." -ForegroundColor Yellow
-        Write-Host "Running: docker compose ps" -ForegroundColor Gray
-        $composeTest = Invoke-Expression "docker compose ps" | Out-String
-        Write-Host "Docker compose test output:" -ForegroundColor Gray
-        Write-Host $composeTest
-        
         # Check Docker status before proceeding
-        Write-Host "`nChecking Docker status before make up..." -ForegroundColor Yellow
+        Write-Host "`nChecking Docker status before starting cluster..." -ForegroundColor Yellow
         Write-Host "Running: docker info" -ForegroundColor Gray
         $dockerStatus = Invoke-Expression "docker info" | Out-String
         Write-Host "Docker info:" -ForegroundColor Gray
         Write-Host $dockerStatus
         
-        # Now try the make command with detailed output
-        Write-Host "`nRunning make up..." -ForegroundColor Yellow
+        # Start the cluster using docker compose
+        Write-Host "`nStarting cluster with docker compose..." -ForegroundColor Yellow
         Write-Host "Current directory: $(Get-Location)" -ForegroundColor Gray
-        Write-Host "`nRunning: make -f Makefile.win up" -ForegroundColor Gray
+        Write-Host "`nRunning: docker compose up -d" -ForegroundColor Gray
         
-        # Run make up and capture output
-        $makeOutput = Invoke-Expression "make -f Makefile.win up" | Out-String
-        Write-Host "Make command output:" -ForegroundColor Gray
-        Write-Host $makeOutput
+        # Run docker compose up and capture output
+        $composeOutput = Invoke-Expression "docker compose up -d" | Out-String
+        Write-Host "Docker compose output:" -ForegroundColor Gray
+        Write-Host $composeOutput
         
         # Check if containers are running
         Write-Host "`nVerifying container status..." -ForegroundColor Yellow
@@ -784,8 +780,8 @@ function Start-Build {
         Get-ChildItem -Force | Format-Table Name, Length, LastWriteTime
         
         # Show the actual error output
-        Write-Host "`nMake command output:" -ForegroundColor Red
-        Write-Host $makeOutput
+        Write-Host "`nDocker compose output:" -ForegroundColor Red
+        Write-Host $composeOutput
         
         exit 1
     }
