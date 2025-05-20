@@ -208,8 +208,6 @@ $formattedHosts
 
     # Generate docker-compose.yml content
     $yamlContent = @"
-version: '3.8'
-
 services:
 $($computeNodes -join "`n")
   db:
