@@ -86,7 +86,7 @@ RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool /etc/slurm/ && \
 # Set up users and groups
 RUN groupadd -g 1000 ood && \
     useradd -u 1000 -g ood -m -s /bin/bash ood && \
-    groupadd -g 1002 users && \
+    getent group users || groupadd -g 1002 users && \
     for i in arnold bambam barney betty chip dino edna fred gazoo pebbles wilma; do \
         useradd -m -g users -s /bin/bash $i && \
         echo 'password' | passwd $i --stdin; \
@@ -126,25 +126,29 @@ RUN ssh-keygen -A && \
     echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
 
 # Copy startup script and convert line endings
-COPY startup.sh /sbin/
-COPY login.startup.sh slurmdbd.startup.sh slurmrestd.startup.sh slurmctld.startup.sh slurmctld.startup2.sh /usr/local/src/
-RUN chmod 755 /sbin/startup.sh && \
-    dos2unix /sbin/startup.sh && \
-    sed -i 's/\r$//' /sbin/startup.sh && \
-    cat /sbin/startup.sh && \
-    ls -l /sbin/startup.sh && \
-    file /sbin/startup.sh && \
-    head -n 1 /sbin/startup.sh && \
+COPY scaleout/startup.sh /usr/local/src/
+COPY scaleout/login.startup.sh scaleout/slurmdbd.startup.sh scaleout/slurmrestd.startup.sh scaleout/slurmctld.startup.sh scaleout/slurmctld.startup2.sh /usr/local/src/
+COPY scaleout/hosts.nodes /etc/
+COPY scaleout/slurm*.service /usr/lib/systemd/system/
+RUN chmod 755 /usr/local/src/startup.sh && \
+    dos2unix /usr/local/src/startup.sh && \
+    sed -i 's/\r$//' /usr/local/src/startup.sh && \
+    cat /usr/local/src/startup.sh && \
+    ls -l /usr/local/src/startup.sh && \
+    file /usr/local/src/startup.sh && \
+    head -n 1 /usr/local/src/startup.sh && \
+    ln -sf /usr/local/src/startup.sh /sbin/startup.sh && \
     chmod 755 /usr/local/src/*.sh && \
     dos2unix /usr/local/src/*.sh && \
     sed -i 's/\r$//' /usr/local/src/*.sh && \
     ls -la /usr/local/src/ && \
     ls -l /usr/local/src/slurmdbd.startup.sh && \
     head -n 5 /usr/local/src/slurmdbd.startup.sh && \
-    file /usr/local/src/slurmdbd.startup.sh
+    file /usr/local/src/slurmdbd.startup.sh && \
+    chmod 644 /usr/lib/systemd/system/slurm*.service
 
 # Set up volumes
-VOLUME ["/tmp", "/run", "/run/lock"]
+VOLUME ["/tmp", "/run", "/run/lock", "/sys/fs/cgroup"]
 
 # Set default command
-CMD ["/sbin/startup.sh"] 
+CMD ["/usr/sbin/init"] 

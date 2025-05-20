@@ -32,9 +32,12 @@ function Generate-NodeList {
     }
     else {
         # Generate list of nodes
+        if (Test-Path $Nodelist) {
+            Remove-Item $Nodelist -Force
+        }
         0..$NodesCount | ForEach-Object {
             $i = $_
-            "{0} cluster ${Subnet}.5.$($i + 10) ${Subnet6}5:$($i + 10)"
+            ("node{0:D2} cluster ${Subnet}.5.$($i + 10) ${Subnet6}5:$($i + 10)" -f $i)
         } | Set-Content $Nodelist
     }
 }
@@ -61,56 +64,56 @@ function Generate-HostsFile {
     }
 }
 
-# Generate host list for docker-compose
+# Function to generate host list for docker-compose
 function Get-HostList {
-    $hosts = @{}
+    $hosts = @()
     
-    # Add standard hosts
-    $hosts["db"] = "${Subnet}.1.3"
-    $hosts["db6"] = "${Subnet6}1:3"
-    $hosts["slurmdbd"] = "${Subnet}.1.2"
-    $hosts["slurmdbd6"] = "${Subnet6}1:2"
-    $hosts["login"] = "${Subnet}.1.5"
-    $hosts["login6"] = "${Subnet6}1:5"
-    $hosts["rest"] = "${Subnet}.1.6"
-    $hosts["rest6"] = "${Subnet6}1:6"
-    $hosts["proxy"] = "${Subnet}.1.7"
-    $hosts["proxy6"] = "${Subnet6}1:7"
-    $hosts["es01"] = "${Subnet}.1.15"
-    $hosts["es016"] = "${Subnet6}1:15"
-    $hosts["es02"] = "${Subnet}.1.16"
-    $hosts["es026"] = "${Subnet6}1:16"
-    $hosts["es03"] = "${Subnet}.1.17"
-    $hosts["es036"] = "${Subnet6}1:17"
-    $hosts["kibana"] = "${Subnet}.1.18"
-    $hosts["kibana6"] = "${Subnet6}1:18"
-    $hosts["influxdb"] = "${Subnet}.1.19"
-    $hosts["influxdb6"] = "${Subnet6}1:19"
-    $hosts["grafana"] = "${Subnet}.1.20"
-    $hosts["grafana6"] = "${Subnet6}1:20"
-    $hosts["open-ondemand"] = "${Subnet}.1.21"
-    $hosts["open-ondemand6"] = "${Subnet6}1:21"
-    $hosts["xdmod"] = "${Subnet}.1.22"
-    $hosts["xdmod6"] = "${Subnet6}1:22"
-    $hosts["keycloak"] = "${Subnet}.1.23"
-    $hosts["keycloak6"] = "${Subnet6}1:23"
+    # Add standard hosts using template
+    $hosts += "db:${Subnet}.1.3"
+    $hosts += "db6:${Subnet6}1:3"
+    $hosts += "slurmdbd:${Subnet}.1.2"
+    $hosts += "slurmdbd6:${Subnet6}1:2"
+    $hosts += "login:${Subnet}.1.5"
+    $hosts += "login6:${Subnet6}1:5"
+    $hosts += "rest:${Subnet}.1.6"
+    $hosts += "rest6:${Subnet6}1:6"
+    $hosts += "proxy:${Subnet}.1.7"
+    $hosts += "proxy6:${Subnet6}1:7"
+    $hosts += "es01:${Subnet}.1.15"
+    $hosts += "es016:${Subnet6}1:15"
+    $hosts += "es02:${Subnet}.1.16"
+    $hosts += "es026:${Subnet6}1:16"
+    $hosts += "es03:${Subnet}.1.17"
+    $hosts += "es036:${Subnet6}1:17"
+    $hosts += "kibana:${Subnet}.1.18"
+    $hosts += "kibana6:${Subnet6}1:18"
+    $hosts += "influxdb:${Subnet}.1.19"
+    $hosts += "influxdb6:${Subnet6}1:19"
+    $hosts += "grafana:${Subnet}.1.20"
+    $hosts += "grafana6:${Subnet6}1:20"
+    $hosts += "open-ondemand:${Subnet}.1.21"
+    $hosts += "open-ondemand6:${Subnet6}1:21"
+    $hosts += "xdmod:${Subnet}.1.22"
+    $hosts += "xdmod6:${Subnet6}1:22"
+    $hosts += "keycloak:${Subnet}.1.23"
+    $hosts += "keycloak6:${Subnet6}1:23"
 
     if ($Federation) {
         $c_sub = 5
         $Federation.Split() | ForEach-Object {
             $c = $_
-            $hosts["${c}-mgmtnode"] = "${Subnet}.${c_sub}.1"
-            $hosts["${c}-mgmtnode6"] = "${Subnet6}${c_sub}:1"
-            $hosts["${c}-mgmtnode2"] = "${Subnet}.${c_sub}.2"
-            $hosts["${c}-mgmtnode26"] = "${Subnet6}${c_sub}:2"
+            $hosts += "${c}-mgmtnode:${Subnet}.${c_sub}.1"
+            $hosts += "${c}-mgmtnode6:${Subnet6}${c_sub}:1"
+            $hosts += "${c}-mgmtnode2:${Subnet}.${c_sub}.2"
+            $hosts += "${c}-mgmtnode26:${Subnet6}${c_sub}:2"
             $c_sub++
         }
     }
     else {
-        $hosts["mgmtnode"] = "${Subnet}.1.1"
-        $hosts["mgmtnode6"] = "${Subnet6}1:1"
-        $hosts["mgmtnode2"] = "${Subnet}.1.4"
-        $hosts["mgmtnode26"] = "${Subnet6}1:4"
+        $hosts += "mgmtnode:${Subnet}.1.1"
+        $hosts += "mgmtnode6:${Subnet6}1:1"
+        $hosts += "mgmtnode2:${Subnet}.1.4"
+        $hosts += "mgmtnode26:${Subnet6}1:4"
     }
 
     return $hosts
@@ -138,27 +141,32 @@ function Generate-DockerCompose {
     $hostList = Get-HostList -Federation $Federation
 
     # Format hosts for docker-compose
-    $formattedHosts = ($hostList.GetEnumerator() | ForEach-Object {
-        "      $($_.Key): $($_.Value)"
+    $formattedHosts = ($hostList | Select-Object -Unique | ForEach-Object {
+        "      - `"$_`""
     }) -join "`n"
 
-    # Generate docker-compose.yml content
-    $yamlContent = @"
-# version: '3.8'
-
-services:
-  db:
+    # Generate compute node services
+    $computeNodes = @()
+    if (Test-Path $Nodelist) {
+        Get-Content $Nodelist | ForEach-Object {
+            $name, $cluster, $ip4, $ip6 = $_ -split '\s+'
+            if ($name -match 'node\d+') {
+                $computeNodes += @"
+  ${name}:
     image: scaleout:latest
-    hostname: db
+    hostname: ${name}
+    environment:
+      - LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
     networks:
       internal:
-        ipv4_address: "${Subnet}.1.3"
-        ipv6_address: "${Subnet6}1:3"
+        ipv4_address: "${ip4}"
+        ipv6_address: "${ip6}"
     volumes:
       - root-home:/root
       - cluster-etc-slurm:/etc/slurm
       - mail:/var/spool/mail/
       - src:/usr/local/src/
+      - ld-so-conf:/etc/ld.so.conf.d
       - /etc/localtime:/etc/localtime:ro
       - /run/
       - /run/lock/
@@ -169,6 +177,7 @@ services:
       - /tmp/
       - /var/lib/journal
       - ./logs:/var/log/containers
+    command: ["bash", "-c", "echo -e '/usr/local/lib\n/usr/local/lib64' > /etc/ld.so.conf.d/usr_local_lib.conf && ldconfig && /sbin/startup.sh"]
     tty: true
     logging:
       driver: "json-file"
@@ -187,12 +196,57 @@ services:
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
+    depends_on:
+      - "mgmtnode"
+    extra_hosts:
+$formattedHosts
+
+"@
+            }
+        }
+    }
+
+    # Generate docker-compose.yml content
+    $yamlContent = @"
+services:
+$($computeNodes -join "`n")
+  db:
+    image: sql_server:latest
+    build:
+      context: ./sql_server
+      args:
+        SUBNET: "$Subnet"
+        SUBNET6: "$Subnet6"
+      network: host
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_USER=slurm
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=slurm_acct_db
+      - SUBNET="${Subnet}"
+      - SUBNET6="${Subnet6}"
+    hostname: db
+    networks:
+      internal:
+        ipv4_address: "${Subnet}.1.3"
+        ipv6_address: "${Subnet6}1:3"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+        mode: "non-blocking"
+        max-buffer-size: "25m"
     extra_hosts:
 $formattedHosts
 
   slurmdbd:
     image: scaleout:latest
     hostname: slurmdbd
+    environment:
+      - LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
+      - SLURM_FEDERATION_CLUSTER=cluster
     networks:
       internal:
         ipv4_address: "${Subnet}.1.2"
@@ -202,6 +256,7 @@ $formattedHosts
       - cluster-etc-slurm:/etc/slurm
       - mail:/var/spool/mail/
       - src:/usr/local/src/
+      - ld-so-conf:/etc/ld.so.conf.d
       - /etc/localtime:/etc/localtime:ro
       - /run/
       - /run/lock/
@@ -212,6 +267,7 @@ $formattedHosts
       - /tmp/
       - /var/lib/journal
       - ./logs:/var/log/containers
+    command: ["bash", "-c", "echo -e '/usr/local/lib\n/usr/local/lib64' > /etc/ld.so.conf.d/usr_local_lib.conf && ldconfig && /sbin/startup.sh"]
     tty: true
     logging:
       driver: "json-file"
@@ -238,10 +294,11 @@ $formattedHosts
   mgmtnode:
     image: scaleout:latest
     environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
       - container=docker
       - SLURM_FEDERATION_CLUSTER=cluster
+      - LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
     hostname: mgmtnode
     networks:
       internal:
@@ -257,6 +314,7 @@ $formattedHosts
       - auth:/auth/
       - xdmod:/xdmod/
       - src:/usr/local/src/
+      - ld-so-conf:/etc/ld.so.conf.d
       - /etc/localtime:/etc/localtime:ro
       - /run/
       - /run/lock/
@@ -267,6 +325,7 @@ $formattedHosts
       - /tmp/
       - /var/lib/journal
       - ./logs:/var/log/containers
+    command: ["bash", "-c", "echo -e '/usr/local/lib\n/usr/local/lib64' > /etc/ld.so.conf.d/usr_local_lib.conf && ldconfig && /sbin/startup.sh"]
     tty: true
     logging:
       driver: "json-file"
@@ -293,10 +352,11 @@ $formattedHosts
   mgmtnode2:
     image: scaleout:latest
     environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
       - container=docker
       - SLURM_FEDERATION_CLUSTER=cluster
+      - LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
     hostname: mgmtnode2
     networks:
       internal:
@@ -310,6 +370,7 @@ $formattedHosts
       - slurmctld:/var/spool/slurm
       - mail:/var/spool/mail/
       - src:/usr/local/src/
+      - ld-so-conf:/etc/ld.so.conf.d
       - /etc/localtime:/etc/localtime:ro
       - /run/
       - /run/lock/
@@ -320,6 +381,7 @@ $formattedHosts
       - /tmp/
       - /var/lib/journal
       - ./logs:/var/log/containers
+    command: ["bash", "-c", "echo -e '/usr/local/lib\n/usr/local/lib64' > /etc/ld.so.conf.d/usr_local_lib.conf && ldconfig && /sbin/startup.sh"]
     tty: true
     logging:
       driver: "json-file"
@@ -345,15 +407,14 @@ $formattedHosts
 $formattedHosts
 
   login:
-    build:
-      context: ./login
-      dockerfile: Dockerfile.win
     image: scaleout:latest
     environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
       - container=docker
+      - LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
     hostname: login
+    command: ["bash", "-c", "echo \"Debug: Checking munge user/group\" && id munge && getent passwd munge && getent group munge && echo \"Debug: Initial state of /var/log/munge\" && ls -la /var/log/munge || true && echo \"Debug: Parent directory permissions\" && ls -la /var/log/ && echo \"Debug: Creating /var/log/munge\" && rm -rf /var/log/munge && mkdir -p /var/log/munge && echo \"Debug: Setting ownership\" && chown -R munge:munge /var/log/munge && chmod 700 /var/log/munge && echo \"Debug: Final state of /var/log/munge\" && ls -la /var/log/munge && echo \"Debug: Starting munged\" && /usr/local/sbin/munged --num-threads=10 && echo \"Debug: Process context\" && ps aux | grep munged || echo \"No munged process found\" && echo \"Debug: Copying startup script\" && cp /usr/local/src/login.startup.sh /usr/local/src/startup.sh && dos2unix /usr/local/src/startup.sh && chmod +x /usr/local/src/startup.sh && echo \"Debug: Starting main startup script\" && /sbin/startup.sh"]
     networks:
       internal:
         ipv4_address: "${Subnet}.1.5"
@@ -366,6 +427,7 @@ $formattedHosts
       - slurmctld:/var/spool/slurm
       - mail:/var/spool/mail/
       - src:/usr/local/src/
+      - ld-so-conf:/etc/ld.so.conf.d
       - /var/lib/containers
       - /dev/fuse:/dev/fuse:rw
       - container-shared:/srv/containers
@@ -379,6 +441,7 @@ $formattedHosts
       - /tmp/
       - /var/lib/journal
       - ./logs:/var/log/containers
+      - ./scaleout/login.startup.sh:/usr/local/src/login.startup.sh:ro
     tty: true
     logging:
       driver: "json-file"
@@ -397,12 +460,15 @@ $formattedHosts
     security_opt:
       - seccomp:unconfined
       - apparmor:unconfined
+    init: true
     extra_hosts:
 $formattedHosts
 
   rest:
     image: scaleout:latest
     hostname: rest
+    environment:
+      - LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64
     networks:
       internal:
         ipv4_address: "${Subnet}.1.6"
@@ -410,6 +476,7 @@ $formattedHosts
     volumes:
       - etc-ssh:/etc/ssh
       - cluster-etc-slurm:/etc/slurm
+      - ld-so-conf:/etc/ld.so.conf.d
       - /etc/localtime:/etc/localtime:ro
       - /run/
       - /run/lock/
@@ -420,6 +487,7 @@ $formattedHosts
       - /tmp/
       - /var/lib/journal
       - ./logs:/var/log/containers
+    command: ["bash", "-c", "echo -e '/usr/local/lib\n/usr/local/lib64' > /etc/ld.so.conf.d/usr_local_lib.conf && ldconfig && /sbin/startup.sh"]
     tty: true
     logging:
       driver: "json-file"
@@ -448,8 +516,8 @@ $formattedHosts
       context: ./proxy
     image: proxy:latest
     environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
       - container=docker
     hostname: proxy
     command: ["bash", "-c", "/usr/sbin/nginx& /usr/sbin/php-fpm83 -F& wait"]
@@ -490,8 +558,8 @@ $formattedHosts
     build:
       context: ./grafana
     environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
     networks:
       internal:
         ipv4_address: "${Subnet}.1.20"
@@ -525,8 +593,8 @@ $formattedHosts
     image: influxdb
     command: ["bash", "-c", "/setup.sh & source /entrypoint.sh"]
     environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=user
       - DOCKER_INFLUXDB_INIT_PASSWORD=password
@@ -574,8 +642,8 @@ $formattedHosts
       context: ./open-ondemand
     image: open-ondemand
     environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
       - DEFAULT_SSHHOST=login
     volumes:
       - etc-ssh:/etc/shared-ssh
@@ -614,8 +682,8 @@ $formattedHosts
       dockerfile: Dockerfile.win
     image: xdmod:latest
     environment:
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
       - container=docker
     hostname: xdmod
     command: ["/sbin/startup.sh"]
@@ -702,8 +770,8 @@ $formattedHosts
       - cluster.initial_master_nodes=es01,es02,es03
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
     ulimits:
       memlock:
         soft: -1
@@ -745,8 +813,8 @@ $formattedHosts
       - cluster.initial_master_nodes=es01,es02,es03
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
     ulimits:
       memlock:
         soft: -1
@@ -786,8 +854,8 @@ $formattedHosts
       - cluster.initial_master_nodes=es01,es02,es03
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
     ulimits:
       memlock:
         soft: -1
@@ -823,8 +891,8 @@ $formattedHosts
     environment:
       - SERVER_NAME=scaleout
       - ELASTICSEARCH_HOSTS=http://es01:9200
-      - SUBNET="${Subnet}"
-      - SUBNET6="${Subnet6}"
+      - 'SUBNET=${Subnet}'
+      - 'SUBNET6=${Subnet6}'
     networks:
       internal:
         ipv4_address: "${Subnet}.1.18"
@@ -870,6 +938,7 @@ volumes:
   xdmod:
   src:
   container-shared:
+  ld-so-conf:
 
 networks:
   internal:
