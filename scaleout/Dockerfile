@@ -12,11 +12,11 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	rpm gcc automake make perl-macros rpm-build passwd \
 	readline-devel openssl-devel openssl pam-devel \
 	perl-ExtUtils-MakeMaker.noarch mariadb-devel mariadb \
-	glib2-devel gtk2-devel libtool git vim gdb hostname \
+	glib2-devel gtk2-devel libtool git vim hostname \
 	perl-Switch expect lua-devel rrdtool-devel lz4-devel json-c-devel \
 	libcurl-devel freeipmi-devel numactl-devel lynx numactl \
 	rdma-core-devel gcc-c++ flex libgcrypt-devel gcc-gfortran \
-	strace ltrace gdb wget cmake sudo jansson-devel \
+	strace ltrace wget cmake sudo jansson-devel \
 	openssh-server pam-devel xterm oniguruma-devel xmvn \
 	lua-devel xauth man mailx postfix http-parser-devel \
 	libyaml-devel mlocate gettext-devel texinfo java-21-openjdk-devel \
