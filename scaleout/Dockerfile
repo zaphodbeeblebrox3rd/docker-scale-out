@@ -115,8 +115,6 @@ RUN /usr/sbin/groupadd -r slurm -g 1001 && \
 	chmod 0700 /home/slurm/.bash_profile && \
 	chmod 0400 /etc/shadow
 
-RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool /etc/slurm/
-RUN chown slurm:slurm -R /var/spool/slurm /etc/slurm/
 RUN /usr/sbin/groupadd -r munge && \
 	/usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
 	mkdir -m 0700 -p /etc/munge/ && \
@@ -378,7 +376,10 @@ COPY nodelist /etc/nodelist
 RUN mkdir -p -m 0777 /lab_scripts
 COPY lab_scripts/* /lab_scripts/
 
+RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool /etc/slurm/
 COPY slurm/ /etc/slurm/
+RUN chown slurm:slurm -R /var/spool/slurm /etc/slurm/
+
 RUN ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	chmod 0600 /etc/slurm/slurmdbd.conf && \
 	chown slurm:slurm /etc/slurm/slurmdbd.conf && \
