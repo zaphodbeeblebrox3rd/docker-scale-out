@@ -273,6 +273,8 @@ RUN echo -e '+:root:ALL\n+:wheel:ALL\n+:slurm:ALL\n-:ALL:ALL' > /etc/security/ac
 	echo -e '#%PAM-1.0\naccount    sufficient      pam_access.so\naccount    sufficient   pam_slurm_adopt.so\n' | \
 	cat - /etc/pam.d/sshd > /etc/pam.d/sshd2 && \
 	mv /etc/pam.d/sshd2 /etc/pam.d/sshd && \
+	mkdir -m 0755 -p /var/spool/slurm/statesave /var/spool/slurm/spool && \
+	chown slurm:slurm -R /var/spool/slurm/ && \
 	echo -e 'SlurmdSpoolDir=/var/spool/slurm/spool' > /etc/nss_slurm.conf
 
 #active slurm nss
@@ -376,9 +378,9 @@ COPY nodelist /etc/nodelist
 RUN mkdir -p -m 0777 /lab_scripts
 COPY lab_scripts/* /lab_scripts/
 
-RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool /etc/slurm/
+RUN mkdir -m 0755 -p /etc/slurm/
 COPY slurm/ /etc/slurm/
-RUN chown slurm:slurm -R /var/spool/slurm /etc/slurm/
+RUN chown slurm:slurm -R /etc/slurm/
 
 RUN ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	chmod 0600 /etc/slurm/slurmdbd.conf && \
