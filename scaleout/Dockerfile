@@ -12,11 +12,11 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	rpm gcc automake make perl-macros rpm-build passwd \
 	readline-devel openssl-devel openssl pam-devel \
 	perl-ExtUtils-MakeMaker.noarch mariadb-devel mariadb \
-	glib2-devel gtk2-devel libtool git vim gdb hostname \
+	glib2-devel gtk2-devel libtool git vim hostname \
 	perl-Switch expect lua-devel rrdtool-devel lz4-devel json-c-devel \
 	libcurl-devel freeipmi-devel numactl-devel lynx numactl \
 	rdma-core-devel gcc-c++ flex libgcrypt-devel gcc-gfortran \
-	strace ltrace gdb wget cmake sudo jansson-devel \
+	strace ltrace wget cmake sudo jansson-devel \
 	openssh-server pam-devel xterm oniguruma-devel xmvn \
 	lua-devel xauth man mailx postfix http-parser-devel \
 	libyaml-devel mlocate gettext-devel texinfo java-21-openjdk-devel \
@@ -27,7 +27,7 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	python3-setuptools-wheel python3-virtualenv python3-urllib3 \
 	python3-six python3-requests python3-pexpect \
 	python3.11 python3.11-pip python3.11-pytest python3.11-requests \
-	bc emacs nano
+	bc emacs nano gmp-devel mpfr-devel bison elfutils-debuginfod
 RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	alternatives --set python3 /usr/bin/python3.11 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest-3 && \
@@ -67,6 +67,9 @@ WORKDIR /usr/local/src/jq
 RUN autoreconf --force --install && ./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-maintainer-mode && make -j && make install
 RUN git clone --depth 1 --single-branch -b munge-0.5.13 https://github.com/dun/munge.git /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
+RUN autoreconf -i && ./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && make -j >/dev/null && make install >/dev/null
+RUN git clone --depth 1 --single-branch -b gdb-16.3-release https://github.com/bminor/binutils-gdb.git /usr/local/src/gdb/
+WORKDIR /usr/local/src/gdb/
 RUN autoreconf -i && ./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && make -j >/dev/null && make install >/dev/null
 RUN mkdir -p /etc/slurm /etc/pmix
 RUN git clone --depth 1 --single-branch -b release-2.1.12-stable https://github.com/libevent/libevent.git /usr/local/src/libevent/
