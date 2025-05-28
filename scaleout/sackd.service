@@ -2,4 +2,4 @@
 After=sshd.service
 
 [Service]
-ExecCondition=grep -e 'AuthType=auth/slurm' -e 'AuthType=slurm' --  /etc/slurm/slurm.conf
+ExecCondition=/usr/local/bin/sackd.check.sh 
