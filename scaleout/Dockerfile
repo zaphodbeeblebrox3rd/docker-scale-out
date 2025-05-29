@@ -115,8 +115,6 @@ RUN /usr/sbin/groupadd -r slurm -g 1001 && \
 	chmod 0700 /home/slurm/.bash_profile && \
 	chmod 0400 /etc/shadow
 
-RUN mkdir -p /var/spool/slurm/statesave /var/spool/slurm/spool /etc/slurm/
-RUN chown slurm:slurm -R /var/spool/slurm /etc/slurm/
 RUN /usr/sbin/groupadd -r munge && \
 	/usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
 	mkdir -m 0700 -p /etc/munge/ && \
@@ -275,6 +273,8 @@ RUN echo -e '+:root:ALL\n+:wheel:ALL\n+:slurm:ALL\n-:ALL:ALL' > /etc/security/ac
 	echo -e '#%PAM-1.0\naccount    sufficient      pam_access.so\naccount    sufficient   pam_slurm_adopt.so\n' | \
 	cat - /etc/pam.d/sshd > /etc/pam.d/sshd2 && \
 	mv /etc/pam.d/sshd2 /etc/pam.d/sshd && \
+	mkdir -m 0755 -p /var/spool/slurm/statesave /var/spool/slurm/spool && \
+	chown slurm:slurm -R /var/spool/slurm/ && \
 	echo -e 'SlurmdSpoolDir=/var/spool/slurm/spool' > /etc/nss_slurm.conf
 
 #active slurm nss
@@ -284,8 +284,7 @@ RUN awk '{if (match($1, /^(passwd|group)/)) {print $1, "slurm", $2, $3} else {pr
 	mkdir -p /etc/PDSH && \
 	echo -e "node00\nnode01\nnode02\nnode03\nnode04\nnode05\nnode06\nnode07\nnode08\nnode09" > /etc/PDSH/hosts && \
 	cat /tmp/bashrc >> /etc/bashrc && unlink /tmp/bashrc && \
-	mandb && \
-	mkdir -p -m 0777 /lab_scripts
+	mandb
 RUN git clone --depth 1 --single-branch -b v1.0.5 https://github.com/CLIP-HPC/SlurmCommander.git /usr/local/src/slurmcommander/ && \
 	cd /usr/local/src/slurmcommander/ && make build && make install && mkdir -p /etc/scom && \
 	echo 'prefix="/usr/local/bin"' > /etc/scom/scom.conf && cp scom /usr/local/bin/scom
@@ -300,6 +299,7 @@ COPY slurmctld.startup2.sh /usr/local/bin/slurmctld.startup2.sh
 COPY slurmdbd.startup.sh /usr/local/bin/slurmdbd.startup.sh
 COPY slurmd.startup.sh /usr/local/bin/slurmd.startup.sh
 COPY slurmd.check.sh /usr/local/bin/slurmd.check.sh
+COPY sackd.check.sh /usr/local/bin/sackd.check.sh
 COPY login.startup.sh /usr/local/bin/login.startup.sh
 COPY slurmrestd.startup.sh /usr/local/bin/slurmrestd.startup.sh
 COPY slurmrestd.env /etc/sysconfig/slurmrestd
@@ -323,8 +323,7 @@ RUN cp /usr/local/src/slurm/etc/{slurmctld.service,slurmd.service,slurmdbd.servi
 	chmod 0755 /usr/local/bin/slurmd.startup.sh && \
 	chmod 0755 /usr/local/bin/login.startup.sh && \
 	chmod 0755 /usr/local/bin/slurmrestd.startup.sh && \
-	mkdir -p /auth && chown -R slurm:slurm /auth && \
-	chmod 0755 /auth
+	mkdir -m 0770 -p /auth && chown -R slurm:slurm /auth
 
 COPY globals.local /usr/local/src/slurm/testsuite/expect/globals.local
 COPY testsuite.conf /usr/local/src/slurm/testsuite/testsuite.conf
@@ -375,8 +374,14 @@ RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 	fi"
 
 COPY nodelist /etc/nodelist
+
+RUN mkdir -p -m 0777 /lab_scripts
 COPY lab_scripts/* /lab_scripts/
+
+RUN mkdir -m 0755 -p /etc/slurm/
 COPY slurm/ /etc/slurm/
+RUN chown slurm:slurm -R /etc/slurm/
+
 RUN ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	chmod 0600 /etc/slurm/slurmdbd.conf && \
 	chown slurm:slurm /etc/slurm/slurmdbd.conf && \
