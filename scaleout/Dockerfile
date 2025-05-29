@@ -422,6 +422,7 @@ RUN openssl ecparam -out /etc/slurm/ca_cert_key.pem -name prime256v1 -genkey && 
 		printf "${NODE}: $(cat /etc/slurm/${NODE}_token.txt)\n" >> /etc/slurm/node_token_list.txt; \
 	done && \
 	chown slurm:slurm /etc/slurm/*{.pem,.csr} /etc/slurm/node_token_list.txt && \
+	chown slurmrestd:slurmrestd /etc/slurm/restd_cert{.csr,.pem,_key.pem} && \
 	chmod 0600 /etc/slurm/*_cert_key.pem /etc/slurm/*.csr /etc/slurm/node_token_list.txt && \
 	chmod 0644 /etc/slurm/*_cert.pem
 
