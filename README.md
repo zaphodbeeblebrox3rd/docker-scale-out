@@ -70,8 +70,12 @@ Description=docker slice
 Before=slices.target
 [Slice]
 CPUAccounting=true
+CPUWeight=idle
+CPUQuota=90%
 MemoryAccounting=true
-Delegate=yes
+MemoryMax=90%
+IOAccounting=true
+IOWeight=1
 ```
 
 /usr/lib/systemd/system/docker.service.d/local.conf:
@@ -86,9 +90,17 @@ Delegate=yes
 
 Activate the changes:
 ```
-systemctl daemon-reload
-systemctl restart docker.slice docker
+make clean
+sudo systemctl daemon-reload
+sudo systemctl restart docker.slice docker.service
 ```
+
+Verify docker.slice is being used by docker:
+```
+make
+sudo systemctl status docker.slice docker.service
+```
+The container processes should now show up docker.slice process tree.
 
 ## Basic Architecture
 
