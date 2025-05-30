@@ -351,6 +351,14 @@ This is will only disable attempts to build and start the container.
 export DISABLE_XDMOD=1
 ```
 
+## How to disable building gdb
+
+This is will only disable attempts to build gdb from source.
+
+```
+export DISABLE_GDB_BUILD=1
+```
+
 ## Maxing out kernel cgroups total
 
 The Linux kernel has a hard limit of 65535 cgroups total. Stacking large number
