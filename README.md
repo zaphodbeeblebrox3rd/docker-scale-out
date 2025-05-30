@@ -78,6 +78,15 @@ IOAccounting=true
 IOWeight=1
 ```
 
+/etc/systemd/system/docker.service.d/local.conf:
+```
+[Unit]
+After=docker.slice
+Requires=docker.slice
+[Service]
+Slice=docker.slice
+```
+
 /usr/lib/systemd/system/docker.service.d/local.conf:
 ```
 [Service]
