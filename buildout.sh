@@ -315,6 +315,7 @@ $HOSTLIST
         SUBNET: "$SUBNET"
         SUBNET6: "$SUBNET6"
         CACHE_DESTROYER: "$CACHE_DESTROYER"
+        DISABLE_GDB_BUILD: "$DISABLE_GDB_BUILD"
 ${BUILD_ARGS}
       network: host
     image: scaleout:latest
