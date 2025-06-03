@@ -199,10 +199,8 @@ RUN autoreconf -i && ./configure && make -j >/dev/null && make install
 
 RUN git clone --recurse-submodules --depth 1 --single-branch --branch v3.5.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot
 WORKDIR /usr/local/src/enroot
-COPY enroot.conf /tmp/enroot.conf
-RUN make sysconfdir=/etc/enroot/ -j >/dev/null && make install && make setcap && \
-	mkdir -p /etc/enroot/ && cat /tmp/enroot.conf >> /usr/local/etc/enroot/enroot.conf && \
-	unlink /tmp/enroot.conf && mkdir /run/enroot
+RUN make sysconfdir=/etc/ -j >/dev/null && make install && make setcap
+COPY enroot.conf /etc/enroot/enroot.conf
 
 RUN git clone --depth 1 --single-branch --branch V0.12.10 https://github.com/ColinIanKing/stress-ng.git /usr/local/src/stressng
 WORKDIR /usr/local/src/stressng
