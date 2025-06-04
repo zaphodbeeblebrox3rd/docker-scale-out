@@ -180,10 +180,6 @@ RUN wget -q 'https://raw.githubusercontent.com/OpenAPITools/openapi-generator/ma
 	chmod +x /usr/local/bin/openapi-generator-cli && \
 	env OPENAPI_GENERATOR_VERSION=7.3.0 /usr/local/bin/openapi-generator-cli version
 
-RUN git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxis.git /usr/local/src/pyxis
-WORKDIR /usr/local/src/pyxis
-RUN make install
-
 RUN wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp/parallel.tar.bz2 && \
 	mkdir -p /usr/local/src/parallel && \
 	tar --strip-components=1 -C /usr/local/src/parallel -xf /tmp/parallel.tar.bz2 && \
@@ -192,6 +188,10 @@ RUN wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp
 	./configure --disable-documentation && \
 	make -j >/dev/null && \
 	make install
+
+RUN git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxis.git /usr/local/src/pyxis
+WORKDIR /usr/local/src/pyxis
+RUN make install
 
 RUN git clone --depth 1 --single-branch --branch 0.1.103 https://github.com/vasi/squashfuse.git /usr/local/src/squashfuse
 WORKDIR /usr/local/src/squashfuse
