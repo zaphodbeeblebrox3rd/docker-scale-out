@@ -189,18 +189,22 @@ RUN wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp
 	make -j >/dev/null && \
 	make install
 
-RUN git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxis.git /usr/local/src/pyxis
-WORKDIR /usr/local/src/pyxis
-RUN make install
-
-RUN git clone --depth 1 --single-branch --branch 0.1.103 https://github.com/vasi/squashfuse.git /usr/local/src/squashfuse
-WORKDIR /usr/local/src/squashfuse
-RUN autoreconf -i && ./configure && make -j >/dev/null && make install
-
-RUN git clone --recurse-submodules --depth 1 --single-branch --branch v3.5.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot
-WORKDIR /usr/local/src/enroot
-RUN make sysconfdir=/etc/ -j >/dev/null && make install && make setcap
-COPY enroot.conf /etc/enroot/enroot.conf
+COPY enroot.conf /tmp/enroot.conf
+ARG DISABLE_PYXIS
+RUN test ! $DISABLE_PYXIS && ( \
+	git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxis.git /usr/local/src/pyxis && \
+	cd /usr/local/src/pyxis && \
+	make install && \
+	git clone --depth 1 --single-branch --branch 0.1.103 https://github.com/vasi/squashfuse.git /usr/local/src/squashfuse && \
+	cd /usr/local/src/squashfuse && \
+	autoreconf -i && ./configure && make -j >/dev/null && make install && \
+	git clone --recurse-submodules --depth 1 --single-branch --branch v3.5.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot && \
+	cd /usr/local/src/enroot && \
+	make sysconfdir=/etc/ -j >/dev/null && make install && make setcap && \
+	ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
+	mkdir -m 0755 -p /etc/enroot/ && \
+	mv /tmp/enroot.conf /etc/enroot/enroot.conf) || ( \
+	echo "Skipping pyxis+enroot build" && rm -f /tmp/enroot.conf )
 
 RUN git clone --depth 1 --single-branch --branch V0.12.10 https://github.com/ColinIanKing/stress-ng.git /usr/local/src/stressng
 WORKDIR /usr/local/src/stressng
@@ -384,8 +388,7 @@ RUN mkdir -m 0755 -p /etc/slurm/
 COPY slurm/ /etc/slurm/
 RUN chown slurm:slurm -R /etc/slurm/
 
-RUN ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
-	chmod 0600 /etc/slurm/slurmdbd.conf && \
+RUN chmod 0600 /etc/slurm/slurmdbd.conf && \
 	chown slurm:slurm /etc/slurm/slurmdbd.conf && \
 	systemctl enable munge && \
 	chmod 4755 /bin/ping
