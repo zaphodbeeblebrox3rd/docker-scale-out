@@ -75,7 +75,7 @@ RUN test ! $DISABLE_GDB_BUILD && ( \
 	./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
 	make -j >/dev/null && make install >/dev/null ) || ( \
 	echo "Skipping GDB build" )
-RUN mkdir -p /etc/slurm /etc/pmix
+RUN mkdir -p /etc/slurm/plugstack.conf.d/ /etc/pmix
 RUN git clone --depth 1 --single-branch -b release-2.1.12-stable https://github.com/libevent/libevent.git /usr/local/src/libevent/
 RUN git clone -b hdf5-1_10_6 --single-branch --depth 1 https://github.com/HDFGroup/hdf5.git /usr/local/src/hdf5
 WORKDIR /usr/local/src/hdf5
