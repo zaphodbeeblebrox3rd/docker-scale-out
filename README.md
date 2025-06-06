@@ -359,6 +359,14 @@ This is will only disable attempts to build gdb from source.
 export DISABLE_GDB_BUILD=1
 ```
 
+## How to disable building enroot+pyxis
+
+This is will only disable attempts to build enroot and pyxis from source.
+
+```
+export DISABLE_PYXIS=1
+```
+
 ## Maxing out kernel cgroups total
 
 The Linux kernel has a hard limit of 65535 cgroups total. Stacking large number
