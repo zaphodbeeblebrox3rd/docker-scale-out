@@ -378,3 +378,10 @@ error: proctrack_g_create: No space left on device
 ```
 
 When this happens, fewer jobs must be run as this a kernel limitation.
+
+## Changing default bash host
+
+```bash
+export SCALEOUT_DEFAULT_HOST=mgmtnode
+make bash
+```
