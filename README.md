@@ -238,9 +238,10 @@ make clean
 make uninstall
 ```
 
-## To control:
+## To access specific container:
 
-```
+Opens a bash shell inside of container as if it were executing on the host:
+```bash
 make bash
 make HOST=node1 bash
 ```
