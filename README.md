@@ -238,9 +238,10 @@ make clean
 make uninstall
 ```
 
-## To control:
+## To access specific container:
 
-```
+Opens a bash shell inside of container as if it were executing on the host:
+```bash
 make bash
 make HOST=node1 bash
 ```
@@ -377,3 +378,10 @@ error: proctrack_g_create: No space left on device
 ```
 
 When this happens, fewer jobs must be run as this a kernel limitation.
+
+## Changing default bash host
+
+```bash
+export SCALEOUT_DEFAULT_HOST=mgmtnode
+make bash
+```
