@@ -344,6 +344,15 @@ sudo -u xdmod -- /usr/bin/xdmod-ingestor
 exit
 ```
 
+## How to disable building keycloak container
+
+This will disable attempts to build and start the keycloak container.
+This also disabled automatic population of /etc/slurm/jwks.json.
+
+```bash
+export DISABLE_KEYCLOAK=1
+```
+
 ## How to disable building xdmod container
 
 This is will only disable attempts to build and start the container.

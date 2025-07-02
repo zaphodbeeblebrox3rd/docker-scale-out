@@ -220,6 +220,29 @@ then
 	XDMOD=""
 fi
 
+KEYCLOAK="
+  keycloak:
+    image: keycloak:latest
+    build:
+      context: ./keycloak
+      network: host
+    environment:
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=password
+    hostname: keycloak
+$LOGGING
+    networks:
+      internal:
+        ipv4_address: "${SUBNET}.1.23"
+        ipv6_address: "${SUBNET6}1:23"
+$KEYCLOAK_PORTS
+"
+
+if [ "$DISABLE_KEYCLOAK" ]
+then
+	KEYCLOAK=""
+fi
+
 if [ "$CLOUD" ]
 then
 	CLOUD_MOUNTS="
@@ -317,6 +340,7 @@ $HOSTLIST
         CACHE_DESTROYER: "$CACHE_DESTROYER"
         DISABLE_GDB_BUILD: "$DISABLE_GDB_BUILD"
         DISABLE_PYXIS: "$DISABLE_PYXIS"
+        DISABLE_KEYCLOAK: "$DISABLE_KEYCLOAK"
 ${BUILD_ARGS}
       network: host
     image: scaleout:latest
@@ -791,21 +815,7 @@ ${PROXY_PORTS}
       - "rest"
 $HOSTLIST
 $XDMOD
-  keycloak:
-    image: keycloak:latest
-    build:
-      context: ./keycloak
-      network: host
-    environment:
-      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
-      - KC_BOOTSTRAP_ADMIN_PASSWORD=password
-    hostname: keycloak
-$LOGGING
-    networks:
-      internal:
-        ipv4_address: "${SUBNET}.1.23"
-        ipv6_address: "${SUBNET6}1:23"
-$KEYCLOAK_PORTS
+$KEYCLOAK
 EOF
 
 exit 0
