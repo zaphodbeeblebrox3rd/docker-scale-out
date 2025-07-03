@@ -248,7 +248,11 @@ RUN git clone --depth 1 --single-branch --branch v2.1.6 https://github.com/conta
 WORKDIR /usr/local/src/
 RUN git clone --depth 1 --single-branch -b v0.40 https://gitlab.com/charliecloud/main.git /usr/local/src/charliecloud
 WORKDIR /usr/local/src/charliecloud
-RUN ./autogen.sh && ./configure --disable-test && make -j >/dev/null && make install
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-maintainer-mode" || ARGS="--enable-maintainer-mode"; \
+	./autogen.sh && \
+	./configure $ARGS --disable-dependency-tracking --enable-buggy-build --disable-test --disable-html && \
+	make -j >/dev/null && \
+	make install
 
 #make ssh host keys
 RUN ssh-keygen -f /etc/ssh/ssh_host_rsa_key -N '' -t rsa && \
