@@ -213,7 +213,7 @@ RUN test ! $DISABLE_PYXIS && ( \
 	make install && \
 	git clone --depth 1 --single-branch --branch 0.1.103 https://github.com/vasi/squashfuse.git /usr/local/src/squashfuse && \
 	cd /usr/local/src/squashfuse && \
-	autoreconf -i && ./configure && make -j >/dev/null && make install && \
+	autoreconf -i && ./configure --disable-demo && make -j >/dev/null && make install && \
 	git clone --recurse-submodules --depth 1 --single-branch --branch v3.5.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot && \
 	cd /usr/local/src/enroot && \
 	make sysconfdir=/etc/ -j >/dev/null && make install && make setcap && \
