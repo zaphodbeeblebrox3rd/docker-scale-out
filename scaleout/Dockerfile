@@ -143,7 +143,14 @@ RUN touch /etc/slurm/jwks.json && \
 	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
 RUN git clone --depth 1 --single-branch -b pdsh-2.33 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
 WORKDIR /usr/local/src/pdsh
-RUN autoreconf -i && ./configure --without-rsh --with-ssh --prefix=/usr/local --sysconfdir=/etc/ --with-readline && make -j >/dev/null && make install >/dev/null
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --enable-maintainer-mode"; \
+	autoreconf -i && \
+	./configure $ARGS --disable-dependency-tracking --disable-code-coverage \
+		--without-rsh --without-mrsh --without-torque --without-dmalloc \
+		--with-ssh --prefix=/usr/local --sysconfdir=/etc/ --with-readline \
+		--with-slurm && \
+	make -j >/dev/null && \
+	make install >/dev/null
 WORKDIR /usr/local/src/
 RUN wget -q 'https://download.open-mpi.org/release/open-mpi/v4.1/openmpi-4.1.4.tar.gz' -O /usr/local/src/openmpi4.tar.gz && \
 	tar -xzf /usr/local/src/openmpi4.tar.gz
