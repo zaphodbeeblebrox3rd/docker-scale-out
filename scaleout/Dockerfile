@@ -85,7 +85,10 @@ WORKDIR /usr/local/src/libevent
 RUN ./autogen.sh && ./configure --prefix=/usr/local >/dev/null && make -j >/dev/null && make install >/dev/null
 RUN git clone --depth 1 --single-branch -b hwloc-2.0.2 https://github.com/open-mpi/hwloc.git /usr/local/src/hwloc/
 WORKDIR /usr/local/src/hwloc
-RUN ./autogen.sh && ./configure --prefix=/usr/local --sysconfdir=/etc/hwloc/ >/dev/null && make -j >/dev/null && make install >/dev/null
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --disable-picky"; \
+	./autogen.sh && ./configure --prefix=/usr/local --sysconfdir=/etc/hwloc/ $ARGS >/dev/null && \
+	make -j >/dev/null && \
+	make install >/dev/null
 RUN git clone --depth 1 --single-branch -b v4.2.2 https://github.com/pmix/pmix.git /usr/local/src/pmix/
 WORKDIR /usr/local/src/pmix
 RUN ./autogen.pl && ./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-devel-headers --with-tests-examples  --enable-debug --with-libevent=/usr/local/ >/dev/null && \
