@@ -208,6 +208,7 @@ RUN wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp
 COPY enroot.conf /tmp/enroot.conf
 ARG DISABLE_PYXIS
 RUN test ! $DISABLE_PYXIS && ( \
+	[ ${DISABLE_DEVELOPER} ] && unset DEBUG || export DEBUG=1; \
 	git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxis.git /usr/local/src/pyxis && \
 	cd /usr/local/src/pyxis && \
 	make install && \
@@ -216,7 +217,9 @@ RUN test ! $DISABLE_PYXIS && ( \
 	autoreconf -i && ./configure --disable-demo && make -j >/dev/null && make install && \
 	git clone --recurse-submodules --depth 1 --single-branch --branch v3.5.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot && \
 	cd /usr/local/src/enroot && \
-	make sysconfdir=/etc/ -j >/dev/null && make install && make setcap && \
+	make $DEBUG sysconfdir=/etc/ -j >/dev/null && \
+	make install && \
+	make setcap && \
 	ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	mkdir -m 0755 -p /etc/enroot/ && \
 	mv /tmp/enroot.conf /etc/enroot/enroot.conf) || ( \
