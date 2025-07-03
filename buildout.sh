@@ -74,6 +74,7 @@ NODELIST=${NODELIST:-"scaleout/nodelist"}
 
 if [ ! -z "$SLURM_BENCHMARK" ]
 then
+	export DISABLE_DEVELOPER=1
 MYSQL_VOLUMES="
     volumes:
       - type: tmpfs
@@ -341,6 +342,7 @@ $HOSTLIST
         DISABLE_GDB_BUILD: "$DISABLE_GDB_BUILD"
         DISABLE_PYXIS: "$DISABLE_PYXIS"
         DISABLE_KEYCLOAK: "$DISABLE_KEYCLOAK"
+        DISABLE_DEVELOPER: "$DISABLE_DEVELOPER"
 ${BUILD_ARGS}
       network: host
     image: scaleout:latest
