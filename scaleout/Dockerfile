@@ -141,7 +141,7 @@ RUN touch /etc/slurm/jwks.json && \
 	dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
 	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
 	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
-RUN git clone --depth 1 --single-branch -b pdsh-2.33 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
+RUN git clone --depth 1 --single-branch -b pdsh-2.35 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
 WORKDIR /usr/local/src/pdsh
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --enable-maintainer-mode"; \
 	autoreconf -i && \
