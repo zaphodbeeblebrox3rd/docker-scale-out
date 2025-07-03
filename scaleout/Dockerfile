@@ -78,7 +78,8 @@ RUN test ! ${DISABLE_GDB_BUILD} -a ! ${DISABLE_DEVELOPER} && ( \
 RUN mkdir -p /etc/slurm/plugstack.conf.d/ /etc/pmix
 RUN git clone -b hdf5-1_10_6 --single-branch --depth 1 https://github.com/HDFGroup/hdf5.git /usr/local/src/hdf5
 WORKDIR /usr/local/src/hdf5
-RUN ./configure --prefix=/usr/local/ >/dev/null && make -j install >/dev/null
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--enable-build-mode=production --disable-dependency-tracking --enable-profiling=no" || ARGS="--enable-build-mode=debug"; \
+	./configure --prefix=/usr/local/ $ARGS >/dev/null && make -j install >/dev/null
 RUN git clone --depth 1 --single-branch -b release-2.1.12-stable https://github.com/libevent/libevent.git /usr/local/src/libevent/
 WORKDIR /usr/local/src/libevent
 RUN ./autogen.sh && ./configure --prefix=/usr/local >/dev/null && make -j >/dev/null && make install >/dev/null
