@@ -106,10 +106,10 @@ RUN git config --global user.email "you@example.com" && \
 RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
 		CONF_ARGS=""; \
 	else \
-		CONF_ARGS="--enable-memory-leak-debug --enable-developer --disable-optimizations --with-hdf5=/usr/local/bin/h5cc"; \
+		CONF_ARGS="--enable-memory-leak-debug --enable-developer --disable-optimizations"; \
 	fi; \
 	./configure --enable-slurmrestd --enable-multiple-slurmd $CONF_ARGS --with-munge=/usr/local/ --prefix=/usr/local \
-		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local \
+		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local --with-hdf5=/usr/local/bin/h5cc \
 		--enable-pam --with-s2n=/usr/local --sysconfdir=/etc/slurm >/dev/null && \
 	make -j >/dev/null && make install >/dev/null && make -j install-contrib >/dev/null && \
 	cd contribs && make install && \
