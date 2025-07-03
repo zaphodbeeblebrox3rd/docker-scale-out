@@ -246,7 +246,7 @@ RUN git clone --depth 1 --single-branch --branch v2.1.6 https://github.com/conta
 	make -j && make podman && make install
 
 WORKDIR /usr/local/src/
-RUN git clone --depth 1 --single-branch -b v0.30 https://gitlab.com/charliecloud/main.git /usr/local/src/charliecloud
+RUN git clone --depth 1 --single-branch -b v0.40 https://gitlab.com/charliecloud/main.git /usr/local/src/charliecloud
 WORKDIR /usr/local/src/charliecloud
 RUN ./autogen.sh && ./configure --disable-test && make -j >/dev/null && make install
 
