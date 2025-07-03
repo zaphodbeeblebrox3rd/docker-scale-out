@@ -69,7 +69,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode"
 	make -j >/dev/null && \
 	make install >/dev/null
 ARG DISABLE_GDB_BUILD
-RUN test ! $DISABLE_GDB_BUILD && ( \
+RUN test ! ${DISABLE_GDB_BUILD} -a ! ${DISABLE_DEVELOPER} && ( \
 	git clone --depth 1 --single-branch -b gdb-16.3-release https://github.com/bminor/binutils-gdb.git /usr/local/src/gdb/ && \
 	cd /usr/local/src/gdb/ && autoreconf -i && \
 	./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
