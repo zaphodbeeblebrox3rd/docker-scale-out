@@ -201,7 +201,7 @@ RUN wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp
 	tar --strip-components=1 -C /usr/local/src/parallel -xf /tmp/parallel.tar.bz2 && \
 	cd /usr/local/src/parallel && \
 	autoreconf -i && \
-	./configure --disable-documentation && \
+	./configure && \
 	make -j >/dev/null && \
 	make install
 
