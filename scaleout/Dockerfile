@@ -63,7 +63,11 @@ WORKDIR /usr/local/src/jq
 RUN autoreconf --force --install && ./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode && make -j && make install
 RUN git clone --depth 1 --single-branch -b munge-0.5.13 https://github.com/dun/munge.git /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
-RUN autoreconf -i && ./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && make -j >/dev/null && make install >/dev/null
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
+	autoreconf -i && \
+	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
+	make -j >/dev/null && \
+	make install >/dev/null
 ARG DISABLE_GDB_BUILD
 RUN test ! $DISABLE_GDB_BUILD && ( \
 	git clone --depth 1 --single-branch -b gdb-16.3-release https://github.com/bminor/binutils-gdb.git /usr/local/src/gdb/ && \
