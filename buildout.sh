@@ -90,6 +90,13 @@ NODES_COUNT=9
 BUILD_ARGS=""
 fi
 
+if [ ! -z $DISABLE_DEVELOPER ]
+then
+	export CMAKE_BUILD_TYPE="Release"
+else
+	export CMAKE_BUILD_TYPE="Debug"
+fi
+
 if [ ! -s "$NODELIST" -o "$SLURM_BENCHMARK" ]
 then
 	if [ ! -z "$FEDERATION" ]
@@ -343,6 +350,7 @@ $HOSTLIST
         DISABLE_PYXIS: "$DISABLE_PYXIS"
         DISABLE_KEYCLOAK: "$DISABLE_KEYCLOAK"
         DISABLE_DEVELOPER: "$DISABLE_DEVELOPER"
+        CMAKE_BUILD_TYPE: "$CMAKE_BUILD_TYPE"
 ${BUILD_ARGS}
       network: host
     image: scaleout:latest

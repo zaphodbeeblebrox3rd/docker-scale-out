@@ -35,15 +35,11 @@ RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	ln -s /usr/lib/python3.6/site-packages/pexpect/ /usr/lib/python3.11/site-packages/pexpect && \
 	ln -s /usr/lib/python3.6/site-packages/ptyprocess/ /usr/lib/python3.11/site-packages/ptyprocess
 ARG DISABLE_DEVELOPER
+ARG CMAKE_BUILD_TYPE
+ENV CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 RUN git clone --depth 1 --single-branch -b v1.5.18 https://github.com/aws/s2n-tls.git /usr/local/src/s2n-tls/
 WORKDIR /usr/local/src/s2n-tls/
-RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
-		TYPE="Release"; \
-	else \
-		TYPE="Debug"; \
-	fi; \
-	cmake . -Bbuild \
-		-DCMAKE_BUILD_TYPE=${TYPE} \
+RUN cmake . -Bbuild \
 		-DCMAKE_INSTALL_PREFIX=/usr/local/ \
 		-DBUILD_SHARED_LIBS=ON \
 		-DS2N_INSTALL_S2NC_S2ND=1 && \
