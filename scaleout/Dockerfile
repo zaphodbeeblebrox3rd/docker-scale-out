@@ -91,8 +91,11 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug -
 	make install >/dev/null
 RUN git clone --depth 1 --single-branch -b v4.2.2 https://github.com/pmix/pmix.git /usr/local/src/pmix/
 WORKDIR /usr/local/src/pmix
-RUN ./autogen.pl && ./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-devel-headers --with-tests-examples  --enable-debug --with-libevent=/usr/local/ >/dev/null && \
-	make -j >/dev/null && make install >/dev/null
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || ARGS="--enable-debug --with-devel-headers"; \
+	./autogen.pl && \
+	./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-tests-examples $ARGS --with-libevent=/usr/local/ >/dev/null && \
+	make -j >/dev/null && \
+	make install >/dev/null
 RUN git clone --depth 1 --single-branch -b master https://github.com/SchedMD/slurm.git /usr/local/src/slurm && \
 	git config --global --add safe.directory /usr/local/src/slurm
 WORKDIR /usr/local/src/slurm
