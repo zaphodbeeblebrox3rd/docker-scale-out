@@ -21,7 +21,7 @@ build: ./docker-compose.yml
 	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 
 stop:
-	$(DC) down
+	$(DC) --progress=quiet down
 
 set_nocache:
 	$(eval BUILD := build --no-cache)
@@ -32,11 +32,11 @@ clean-nodelist:
 	truncate -s0 scaleout/nodelist
 
 clean:
-	test -f ./docker-compose.yml && ($(DC) kill -s SIGKILL; $(DC) down --remove-orphans -t1 -v; unlink ./docker-compose.yml) || true
+	test -f ./docker-compose.yml && ($(DC) --progress=quiet kill -s SIGKILL; $(DC)  --progress=quiet down --remove-orphans -t1; unlink ./docker-compose.yml) || true
 	[ -f cloud_socket ] && unlink cloud_socket || true
 
 uninstall:
-	$(DC) down --rmi all --remove-orphans -t1 -v
+	$(DC) --progress=quiet down --rmi all --remove-orphans -t1 -v
 	$(DC) rm -v
 
 run: ./docker-compose.yml
@@ -66,10 +66,10 @@ benchmark-%: clean-nodelist clean
 	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 	$(DC) up --remove-orphans -d
 	$(DC) exec $(HOST) bash -c '(find /root/benchmark/run.d/ -type f -name $(SLURM_BENCHMARK)\*.sh | xargs -i echo bash "{} &"; echo wait) | bash -x'
-	$(DC) down &>/dev/null
+	$(DC) --progress=quiet down
 	truncate -s0 scaleout/nodelist
 
 test-build: clean-nodelist clean build
 	$(DC) exec $(HOST) bash /usr/local/bin/test-build.sh
-	test -f ./docker-compose.yml && ($(DC) kill -s SIGKILL; $(DC) down --remove-orphans -t1 -v; unlink ./docker-compose.yml) || true
+	test -f ./docker-compose.yml && ($(DC) --progress=quiet kill -s SIGKILL; $(DC) --progress=quiet down --remove-orphans -t1; unlink ./docker-compose.yml) || true
 	[ -f cloud_socket ] && unlink cloud_socket || true
