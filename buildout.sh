@@ -74,6 +74,7 @@ NODELIST=${NODELIST:-"scaleout/nodelist"}
 
 if [ ! -z "$SLURM_BENCHMARK" ]
 then
+	export DISABLE_DEVELOPER=1
 MYSQL_VOLUMES="
     volumes:
       - type: tmpfs
@@ -87,6 +88,13 @@ else
 MYSQL_VOLUMES=""
 NODES_COUNT=9
 BUILD_ARGS=""
+fi
+
+if [ ! -z $DISABLE_DEVELOPER ]
+then
+	export CMAKE_BUILD_TYPE="Release"
+else
+	export CMAKE_BUILD_TYPE="Debug"
 fi
 
 if [ ! -s "$NODELIST" -o "$SLURM_BENCHMARK" ]
@@ -341,6 +349,8 @@ $HOSTLIST
         DISABLE_GDB_BUILD: "$DISABLE_GDB_BUILD"
         DISABLE_PYXIS: "$DISABLE_PYXIS"
         DISABLE_KEYCLOAK: "$DISABLE_KEYCLOAK"
+        DISABLE_DEVELOPER: "$DISABLE_DEVELOPER"
+        CMAKE_BUILD_TYPE: "$CMAKE_BUILD_TYPE"
 ${BUILD_ARGS}
       network: host
     image: scaleout:latest
