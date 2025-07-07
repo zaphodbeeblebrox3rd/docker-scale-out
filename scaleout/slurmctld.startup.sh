@@ -91,7 +91,29 @@ then
 	#sacctmgr -vi add user dino Account=bedrock DefaultAccount=bedrock admin=admin
 	#sacctmgr -vi add user pebbles Account=bedrock DefaultAccount=bedrock admin=admin
 
-	/usr/local/bin/slurmctld.jwks.sh
+	if [ {DISABLE_KEYCLOAK} ]
+	then
+		echo "Skipping populating jwks.json" 
+	else
+
+		while [ 1 ]
+		do
+			curl -s "http://{SUBNET}.1.23:8080/realms/master/protocol/openid-connect/certs" > /etc/slurm/jwks.json
+			if [ $? -eq 0 -a -s /etc/slurm/jwks.json ]
+			then
+				keys=$(jq '.keys | length' /etc/slurm/jwks.json)
+				if [ $? -eq 0 ] && [[ "$keys" =~ ^[[:digit:]]+$ ]] && [ "$keys" -gt 0 ]
+				then
+					echo "Downloaded JWKS"
+					break
+				else
+					echo "Retrying JWKS download"
+					unlink /etc/slurm/jwks.json
+				fi
+			fi
+		done
+	fi
+
 else
 	#wait for primary mgt node to be done starting up
 	while [ ! -s /etc/slurm/nodes.conf -o ! -s /etc/slurm/jwks.json -o "$(scontrol --json ping | jq -r '.pings[0].pinged')" != "UP" ]

@@ -322,10 +322,9 @@ COPY my.cnf /etc/
 RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /etc/my.cnf && \
 	ln -s /etc/my.cnf /usr/local/etc/my.cnf
 COPY mysql /usr/local/bin/mysql
-COPY slurmctld.startup.sh /usr/local/bin/slurmctld.startup.sh
 ARG DISABLE_KEYCLOAK
-COPY slurmctld.jwks.sh /usr/local/bin/slurmctld.jwks.sh
-RUN sed -e "s#{SUBNET}#${SUBNET}#g" -e "s#{DISABLE_KEYCLOAK}#${DISABLE_KEYCLOAK}#g" -i /usr/local/bin/slurmctld.jwks.sh
+COPY slurmctld.startup.sh /usr/local/bin/slurmctld.startup.sh
+RUN sed -e "s#{SUBNET}#${SUBNET}#g" -e "s#{DISABLE_KEYCLOAK}#${DISABLE_KEYCLOAK}#g" -i /usr/local/bin/slurmctld.startup.sh
 COPY slurmctld.startup2.sh /usr/local/bin/slurmctld.startup2.sh
 COPY slurmdbd.startup.sh /usr/local/bin/slurmdbd.startup.sh
 COPY slurmd.startup.sh /usr/local/bin/slurmd.startup.sh
