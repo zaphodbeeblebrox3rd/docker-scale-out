@@ -137,10 +137,6 @@ RUN /usr/sbin/groupadd -r munge && \
 	chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed && \
 	chown root:root /etc/munge/ -R && \
 	chown -R munge:munge /etc/munge
-RUN touch /etc/slurm/jwks.json && \
-	dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
-	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
-	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
 RUN git clone --depth 1 --single-branch -b pdsh-2.35 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
 WORKDIR /usr/local/src/pdsh
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --enable-maintainer-mode"; \
@@ -410,10 +406,10 @@ COPY lab_scripts/* /lab_scripts/
 
 RUN mkdir -m 0755 -p /etc/slurm/
 COPY slurm/ /etc/slurm/
-RUN chown slurm:slurm -R /etc/slurm/
 
-RUN chmod 0600 /etc/slurm/slurmdbd.conf && \
-	chown slurm:slurm /etc/slurm/slurmdbd.conf && \
+RUN test -s /etc/slurm/jwt.key || dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key; \
+	chown slurm:slurm -R /etc/slurm/ &&\
+	chmod 0600 /etc/slurm/{jwks.json,jwt.key,slurmdbd.conf} && \
 	systemctl enable munge && \
 	chmod 4755 /bin/ping
 
