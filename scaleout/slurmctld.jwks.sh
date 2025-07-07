@@ -1,7 +1,7 @@
 #!/bin/bash
 #Grab JWKS from keycloak
 
-[ {DISABLE_KEYCLOAK} ] && echo "{}" > /etc/slurm/jwks.json && exit 0
+[ {DISABLE_KEYCLOAK} ] && echo "Skipping populating jwks.json" && exit 0
 
 while [ 1 ]
 do
