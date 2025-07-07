@@ -124,7 +124,8 @@ RUN /usr/sbin/groupadd -r slurm -g 1001 && \
 	mv /tmp/slurm.bash_profile /home/slurm/.bash_profile && \
 	chown slurm:slurm /home/slurm/.bash_profile && \
 	chmod 0700 /home/slurm/.bash_profile && \
-	chmod 0400 /etc/shadow
+	chmod 0400 /etc/shadow && \
+	chmod 4755 /bin/ping
 
 RUN /usr/sbin/groupadd -r munge && \
 	/usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
@@ -409,8 +410,7 @@ COPY slurm/ /etc/slurm/
 
 RUN test -s /etc/slurm/jwt.key || dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key; \
 	chown slurm:slurm -R /etc/slurm/ &&\
-	chmod 0600 /etc/slurm/{jwks.json,jwt.key,slurmdbd.conf} && \
-	chmod 4755 /bin/ping
+	chmod 0600 /etc/slurm/{jwks.json,jwt.key,slurmdbd.conf}
 
 RUN openssl ecparam -out /etc/slurm/ca_cert_key.pem -name prime256v1 -genkey && \
 	openssl req -x509 -key /etc/slurm/ca_cert_key.pem \
