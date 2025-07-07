@@ -374,7 +374,7 @@ COPY slurmd.service /etc/systemd/system/slurmd.service.d/local.conf
 COPY slurmrestd.service /etc/systemd/system/slurmrestd.service.d/local.conf
 COPY postfix.service /etc/systemd/system/postfix.service.d/local.conf
 COPY podman-containers /etc/containers/
-RUN systemctl enable slurmdbd slurmctld sackd slurmd slurmrestd postfix slurmd.slice && \
+RUN systemctl enable slurmdbd slurmctld sackd slurmd slurmrestd postfix slurmd.slice munge && \
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
 RUN touch "/tmp/$CACHE_DESTROYER"
@@ -410,7 +410,6 @@ COPY slurm/ /etc/slurm/
 RUN test -s /etc/slurm/jwt.key || dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key; \
 	chown slurm:slurm -R /etc/slurm/ &&\
 	chmod 0600 /etc/slurm/{jwks.json,jwt.key,slurmdbd.conf} && \
-	systemctl enable munge && \
 	chmod 4755 /bin/ping
 
 RUN openssl ecparam -out /etc/slurm/ca_cert_key.pem -name prime256v1 -genkey && \
