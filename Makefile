@@ -31,8 +31,11 @@ clean-nodelist:
 	truncate -s0 scaleout/nodelist
 
 clean:
-	test -f ./docker-compose.yml && ($(DC) --progress=quiet kill -s SIGKILL; $(DC)  --progress=quiet down --remove-orphans -t1; unlink ./docker-compose.yml) || true
-	[ -f cloud_socket ] && unlink cloud_socket || true
+	@[ -f ./docker-compose.yml ] && ( \
+		$(DC) --progress=quiet kill --remove-orphans -s SIGKILL; \
+		$(DC) --progress=quiet down --remove-orphans -t1;
+		unlink ./docker-compose.yml; \
+	) || true
 
 uninstall:
 	$(DC) --progress=quiet down --rmi all --remove-orphans -t1 -v
