@@ -387,6 +387,15 @@ This is will only disable attempts to build enroot and pyxis from source.
 export DISABLE_PYXIS=1
 ```
 
+## How to disable building GNU parallel
+
+This is will only disable attempts to build GNU parallel from source to work
+around the mirror being down.
+
+```
+export DISABLE_GNU_PARALLEL=1
+```
+
 ## Maxing out kernel cgroups total
 
 The Linux kernel has a hard limit of 65535 cgroups total. Stacking large number

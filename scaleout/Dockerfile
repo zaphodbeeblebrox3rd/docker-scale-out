@@ -192,15 +192,16 @@ RUN newaliases && \
 RUN wget -q 'https://raw.githubusercontent.com/OpenAPITools/openapi-generator/master/bin/utils/openapi-generator-cli.sh' -O /usr/local/bin/openapi-generator-cli && \
 	chmod +x /usr/local/bin/openapi-generator-cli && \
 	env OPENAPI_GENERATOR_VERSION=7.3.0 /usr/local/bin/openapi-generator-cli version
-
-RUN wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp/parallel.tar.bz2 && \
+ARG DISABLE_GNU_PARALLEL
+RUN test ! $DISABLE_GNU_PARALLEL && ( \
+	wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp/parallel.tar.bz2 && \
 	mkdir -p /usr/local/src/parallel && \
 	tar --strip-components=1 -C /usr/local/src/parallel -xf /tmp/parallel.tar.bz2 && \
 	cd /usr/local/src/parallel && \
 	autoreconf -i && \
 	./configure && \
 	make -j >/dev/null && \
-	make install
+	make install ) || echo "Skipping GNU parallel build"
 
 COPY enroot.conf /tmp/enroot.conf
 ARG DISABLE_PYXIS
