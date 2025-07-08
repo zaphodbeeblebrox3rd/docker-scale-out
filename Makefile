@@ -34,6 +34,7 @@ clean:
 	@[ -f ./docker-compose.yml ] && ( \
 		$(DC) --progress=quiet down --remove-orphans --rmi local -v -t 1; \
 		$(DC) --progress=quiet kill --remove-orphans -s SIGKILL; \
+		$(DC) --progress=quiet rm -f -v -s; \
 		unlink ./docker-compose.yml; \
 	) || true
 
