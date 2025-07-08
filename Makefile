@@ -32,8 +32,8 @@ clean-nodelist:
 
 clean:
 	@[ -f ./docker-compose.yml ] && ( \
-		$(DC) --progress=quiet kill --remove-orphans -s SIGKILL; \
 		$(DC) --progress=quiet down --remove-orphans -t1;
+		$(DC) --progress=quiet kill --remove-orphans -s SIGKILL; \
 		unlink ./docker-compose.yml; \
 	) || true
 
