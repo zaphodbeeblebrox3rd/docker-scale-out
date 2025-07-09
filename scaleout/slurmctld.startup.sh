@@ -74,7 +74,7 @@ then
 	do
 		sacctmgr show cluster &>/dev/null
 		[ $? -eq 0 ] && break
-		sleep 5
+		sleep 0.25
 	done
 
 	sacctmgr -vi add cluster "${SLURM_FEDERATION_CLUSTER}"
@@ -91,10 +91,18 @@ then
 	#sacctmgr -vi add user dino Account=bedrock DefaultAccount=bedrock admin=admin
 	#sacctmgr -vi add user pebbles Account=bedrock DefaultAccount=bedrock admin=admin
 
-	/usr/local/bin/slurmctld.jwks.sh
+	if [ ! {DISABLE_KEYCLOAK} ]
+	then
+		keys=$(jq '.keys | length' /etc/slurm/jwks.json)
+                while [ [ $? -eq 0 ] -a [[ "$keys" =~ ^[[:digit:]]+$ ]] -a [ "$keys" -gt 0 ] ]
+		do
+                        echo "Downloading JWKS"
+			curl -s "http://{SUBNET}.1.23:8080/realms/master/protocol/openid-connect/certs" > /etc/slurm/jwks.json
+		done
+	fi
 else
 	#wait for primary mgt node to be done starting up
-	while [ ! -s /etc/slurm/nodes.conf -o ! -s /etc/slurm/jwks.json -o "$(scontrol --json ping | jq -r '.pings[0].pinged')" != "UP" ]
+	while [ ! -s /etc/slurm/nodes.conf -o "$(scontrol --json ping | jq -r '.pings[0].pinged')" != "UP" ]
 	do
 		sleep 0.25
 	done

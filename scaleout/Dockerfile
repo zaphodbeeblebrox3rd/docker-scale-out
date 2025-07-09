@@ -34,7 +34,6 @@ RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest && \
 	ln -s /usr/lib/python3.6/site-packages/pexpect/ /usr/lib/python3.11/site-packages/pexpect && \
 	ln -s /usr/lib/python3.6/site-packages/ptyprocess/ /usr/lib/python3.11/site-packages/ptyprocess
-ARG DISABLE_DEVELOPER
 ARG CMAKE_BUILD_TYPE
 ENV CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 RUN git clone --depth 1 --single-branch -b v1.5.18 https://github.com/aws/s2n-tls.git /usr/local/src/s2n-tls/
@@ -63,6 +62,7 @@ WORKDIR /usr/local/src/jq
 RUN autoreconf --force --install && ./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode && make -j && make install
 RUN git clone --depth 1 --single-branch -b munge-0.5.13 https://github.com/dun/munge.git /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
+ARG DISABLE_DEVELOPER
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
 	autoreconf -i && \
 	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
@@ -124,7 +124,8 @@ RUN /usr/sbin/groupadd -r slurm -g 1001 && \
 	mv /tmp/slurm.bash_profile /home/slurm/.bash_profile && \
 	chown slurm:slurm /home/slurm/.bash_profile && \
 	chmod 0700 /home/slurm/.bash_profile && \
-	chmod 0400 /etc/shadow
+	chmod 0400 /etc/shadow && \
+	chmod 4755 /bin/ping
 
 RUN /usr/sbin/groupadd -r munge && \
 	/usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
@@ -137,10 +138,6 @@ RUN /usr/sbin/groupadd -r munge && \
 	chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed && \
 	chown root:root /etc/munge/ -R && \
 	chown -R munge:munge /etc/munge
-RUN touch /etc/slurm/jwks.json && \
-	dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key && \
-	chown slurm:slurm /etc/slurm/{jwks.json,jwt.key} && \
-	chmod 0600 /etc/slurm/{jwks.json,jwt.key}
 RUN git clone --depth 1 --single-branch -b pdsh-2.35 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
 WORKDIR /usr/local/src/pdsh
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --enable-maintainer-mode"; \
@@ -195,15 +192,16 @@ RUN newaliases && \
 RUN wget -q 'https://raw.githubusercontent.com/OpenAPITools/openapi-generator/master/bin/utils/openapi-generator-cli.sh' -O /usr/local/bin/openapi-generator-cli && \
 	chmod +x /usr/local/bin/openapi-generator-cli && \
 	env OPENAPI_GENERATOR_VERSION=7.3.0 /usr/local/bin/openapi-generator-cli version
-
-RUN wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp/parallel.tar.bz2 && \
+ARG DISABLE_GNU_PARALLEL
+RUN test ! $DISABLE_GNU_PARALLEL && ( \
+	wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp/parallel.tar.bz2 && \
 	mkdir -p /usr/local/src/parallel && \
 	tar --strip-components=1 -C /usr/local/src/parallel -xf /tmp/parallel.tar.bz2 && \
 	cd /usr/local/src/parallel && \
 	autoreconf -i && \
 	./configure && \
 	make -j >/dev/null && \
-	make install
+	make install ) || echo "Skipping GNU parallel build"
 
 COPY enroot.conf /tmp/enroot.conf
 ARG DISABLE_PYXIS
@@ -322,10 +320,9 @@ COPY my.cnf /etc/
 RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /etc/my.cnf && \
 	ln -s /etc/my.cnf /usr/local/etc/my.cnf
 COPY mysql /usr/local/bin/mysql
-COPY slurmctld.startup.sh /usr/local/bin/slurmctld.startup.sh
 ARG DISABLE_KEYCLOAK
-COPY slurmctld.jwks.sh /usr/local/bin/slurmctld.jwks.sh
-RUN sed -e "s#{SUBNET}#${SUBNET}#g" -e "s#{DISABLE_KEYCLOAK}#${DISABLE_KEYCLOAK}#g" -i /usr/local/bin/slurmctld.jwks.sh
+COPY slurmctld.startup.sh /usr/local/bin/slurmctld.startup.sh
+RUN sed -e "s#{SUBNET}#${SUBNET}#g" -e "s#{DISABLE_KEYCLOAK}#${DISABLE_KEYCLOAK}#g" -i /usr/local/bin/slurmctld.startup.sh
 COPY slurmctld.startup2.sh /usr/local/bin/slurmctld.startup2.sh
 COPY slurmdbd.startup.sh /usr/local/bin/slurmdbd.startup.sh
 COPY slurmd.startup.sh /usr/local/bin/slurmd.startup.sh
@@ -379,7 +376,7 @@ COPY slurmd.service /etc/systemd/system/slurmd.service.d/local.conf
 COPY slurmrestd.service /etc/systemd/system/slurmrestd.service.d/local.conf
 COPY postfix.service /etc/systemd/system/postfix.service.d/local.conf
 COPY podman-containers /etc/containers/
-RUN systemctl enable slurmdbd slurmctld sackd slurmd slurmrestd postfix slurmd.slice && \
+RUN systemctl enable slurmdbd slurmctld sackd slurmd slurmrestd postfix slurmd.slice munge && \
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
 RUN touch "/tmp/$CACHE_DESTROYER"
@@ -411,12 +408,10 @@ COPY lab_scripts/* /lab_scripts/
 
 RUN mkdir -m 0755 -p /etc/slurm/
 COPY slurm/ /etc/slurm/
-RUN chown slurm:slurm -R /etc/slurm/
 
-RUN chmod 0600 /etc/slurm/slurmdbd.conf && \
-	chown slurm:slurm /etc/slurm/slurmdbd.conf && \
-	systemctl enable munge && \
-	chmod 4755 /bin/ping
+RUN test -s /etc/slurm/jwt.key || dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key; \
+	chown slurm:slurm -R /etc/slurm/ &&\
+	chmod 0600 /etc/slurm/{jwks.json,jwt.key,slurmdbd.conf}
 
 RUN openssl ecparam -out /etc/slurm/ca_cert_key.pem -name prime256v1 -genkey && \
 	openssl req -x509 -key /etc/slurm/ca_cert_key.pem \

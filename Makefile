@@ -1,6 +1,5 @@
 BUILD ?= up --build --remove-orphans -d
 DC ?= $(shell docker compose version 2>&1 >/dev/null && echo "docker compose" || echo "docker-compose")
-IMAGES := $(shell $(DC) config | awk '{if ($$1 == "image:") print $$2;}' | sort | uniq)
 SUBNET ?= 10.11
 SUBNET6 ?= 2001:db8:1:1::
 
@@ -32,8 +31,12 @@ clean-nodelist:
 	truncate -s0 scaleout/nodelist
 
 clean:
-	test -f ./docker-compose.yml && ($(DC) --progress=quiet kill -s SIGKILL; $(DC)  --progress=quiet down --remove-orphans -t1; unlink ./docker-compose.yml) || true
-	[ -f cloud_socket ] && unlink cloud_socket || true
+	@[ -f ./docker-compose.yml ] && ( \
+		$(DC) --progress=quiet down --remove-orphans --rmi local -v -t 1; \
+		$(DC) --progress=quiet kill --remove-orphans -s SIGKILL; \
+		$(DC) --progress=quiet rm -f -v -s; \
+		unlink ./docker-compose.yml; \
+	) || true
 
 uninstall:
 	$(DC) --progress=quiet down --rmi all --remove-orphans -t1 -v
@@ -55,6 +58,7 @@ bash:
 	$(DC) exec $(HOST) /bin/bash
 
 save: build
+	$(eval IMAGES := $(shell $(DC) config | awk '{if ($$1 == "image:") print $$2;}' | sort | uniq))
 	docker save -o scaleout.tar $(IMAGES)
 
 load:
