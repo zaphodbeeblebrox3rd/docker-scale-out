@@ -212,8 +212,8 @@ RUN [ ! ${DISABLE_PYXIS} ] && \
 	autoreconf -i && ./configure --disable-demo && \
 	make -j >/dev/null && \
 	make install
-RUN test ! $DISABLE_PYXIS && ( \
-	[ ${DISABLE_DEVELOPER} ] && unset DEBUG || export DEBUG=1; \
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
+	[ ! ${DISABLE_PYXIS} ] && \
 	git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxis.git /usr/local/src/pyxis && \
 	cd /usr/local/src/pyxis && \
 	make install && \
@@ -224,9 +224,7 @@ RUN test ! $DISABLE_PYXIS && ( \
 	make setcap && \
 	ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	mkdir -m 0755 -p /etc/enroot/ && \
-	mv /tmp/enroot.conf /etc/enroot/enroot.conf) || ( \
-	echo "Skipping pyxis+enroot build" && rm -f /tmp/enroot.conf )
-
+	mv /tmp/enroot.conf /etc/enroot/enroot.conf
 RUN git clone --depth 1 --single-branch --branch V0.12.10 https://github.com/ColinIanKing/stress-ng.git /usr/local/src/stressng
 WORKDIR /usr/local/src/stressng
 RUN make -j >/dev/null && make install
