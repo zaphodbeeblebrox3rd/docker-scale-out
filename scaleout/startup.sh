@@ -9,7 +9,9 @@ mkdir -p $(awk -F: '$2 ~ /systemd/ {printf "/sys/fs/cgroup/systemd/%s", $3}' /pr
 #systemd user@.service handles on normal nodes
 for i in arnold bambam barney betty chip dino edna fred gazoo pebbles wilma; do
 	uid=$(id -u $i)
-	mkdir -m 0700 -p /run/user/$uid/{.enroot,.local}
+	mkdir -m 0700 -p /run/user/${uid}/local
+	mkdir -m 0700 -p /run/user/${uid}/enroot/{runtime,cache,data,tmp}
+	chown -R $i:users /run/user/${uid}/enroot
 	chown $i:users /run/user/$uid
 done
 
