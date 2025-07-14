@@ -7,7 +7,7 @@ openssl ecparam -out $NODE_PRIVATE_KEY -name prime256v1 -genkey
 
 # Check exit code from openssl
 if [ $? -ne 0 ]; then
-	echo "$BASH_SOURCE: Failed to generate private key"
+	echo "${BASH_SOURCE[@]}" ": Failed to generate private key"
 	exit 1
 fi
 
@@ -19,7 +19,7 @@ openssl req -new -key $NODE_PRIVATE_KEY \
 
 # Check exit code from openssl
 if [ $? -ne 0 ]; then
-	echo "$BASH_SOURCE: Failed to generate CSR"
+	echo "${BASH_SOURCE[@]}" ": Failed to generate CSR"
 	exit 1
 fi
 

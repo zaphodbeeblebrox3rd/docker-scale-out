@@ -8,19 +8,19 @@ KEY_PERMISSIONS=600
 
 # Check if CA certificate file exists
 if [ ! -f $CA_CERT ]; then
-	echo "$BASH_SOURCE: Failed to resolve CA certificate path '$CA_CERT'"
+	echo "${BASH_SOURCE[@]}" ": Failed to resolve CA certificate path '$CA_CERT'"
 	exit 1
 fi
 
 # Check if CA private key file exists
 if [ ! -f $CA_KEY ]; then
-	echo "$BASH_SOURCE: Failed to resolve CA private key path '$CA_KEY'"
+	echo "${BASH_SOURCE[@]}" ": Failed to resolve CA private key path '$CA_KEY'"
 	exit 1
 fi
 
 # Check CA private key permissions
 if [ $(stat -c "%a" $CA_KEY) -ne $KEY_PERMISSIONS ]; then
-	echo "$BASH_SOURCE: Bad permissions for CA private key at '$CA_KEY'. Permissions should be $KEY_PERMISSIONS"
+	echo "${BASH_SOURCE[@]}" ": Bad permissions for CA private key at '$CA_KEY'. Permissions should be $KEY_PERMISSIONS"
 	exit 1
 fi
 
@@ -29,7 +29,7 @@ openssl x509 -req -in $CSR -CA $CA_CERT -CAkey $CA_KEY -CAserial /etc/slurm/ca_c
 
 # Check exit code from openssl
 if [ $? -ne 0 ]; then
-	echo "$BASH_SOURCE: Failed to generate signed certificate"
+	echo "${BASH_SOURCE[@]}" ": Failed to generate signed certificate"
 	exit 1
 fi
 

@@ -6,13 +6,13 @@ TOKEN_PERMISSIONS=600
 
 # Check if token file exists
 if [ ! -f $TOKEN_PATH ]; then
-	echo "$BASH_SOURCE: Failed to resolve token path '$TOKEN_PATH'"
+	echo "${BASH_SOURCE[@]}" ": Failed to resolve token path '$TOKEN_PATH'"
 	exit 1
 fi
 
 # Check node private key permissions
 if [ $(stat -c "%a" $TOKEN_PATH) -ne $TOKEN_PERMISSIONS ]; then
-	echo "$BASH_SOURCE: Bad permissions for node token at '$TOKEN_PATH'. Permissions should be $TOKEN_PERMISSIONS"
+	echo "${BASH_SOURCE[@]}" ": Bad permissions for node token at '$TOKEN_PATH'. Permissions should be $TOKEN_PERMISSIONS"
 	exit 1
 fi
 
