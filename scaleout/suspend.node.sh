@@ -1,5 +1,5 @@
 #!/bin/bash
-exec 1> >(logger -s -t $(basename $0)) 2>&1
+exec 1> >(logger -s -t "$(basename $0)") 2>&1
 
 [ ! -S /run/cloud_socket ] && exit -1
 
