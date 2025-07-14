@@ -7,7 +7,7 @@ for ((try = 0; try < MAX_TRY; try++)); do
 	status="$(scontrol ping --json | jq -r '.pings[0].responding')"
 	rc=$?
 
-	if [ $? -eq 0 -a "${status}" = "true" ]; then
+	if ( [ $rc -eq 0 ] && [ "${status}" = "true" ]); then
 		break
 	elif [ $try -ge $MAX_TRY ]; then
 		echo "FAILED"
