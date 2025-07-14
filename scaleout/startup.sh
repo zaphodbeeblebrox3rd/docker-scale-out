@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Add hosts in the not crazy slow manner
-cat /etc/hosts.nodes >> /etc/hosts
+cat /etc/hosts.nodes >>/etc/hosts
 
 #ensure the systemd cgroup directory exists for enroot
 mkdir -p $(awk -F: '$2 ~ /systemd/ {printf "/sys/fs/cgroup/systemd/%s", $3}' /proc/self/cgroup)
@@ -15,11 +15,10 @@ for i in arnold bambam barney betty chip dino edna fred gazoo pebbles wilma; do
 	chown $i:users /run/user/$uid
 done
 
-ls /usr/lib/systemd/system/slurm*.service | while read s
-do
+ls /usr/lib/systemd/system/slurm*.service | while read s; do
 	#We must set the cluster environment variable for all services since systemd drops it for the services
 	mkdir -p ${s}.d
-	echo -e "[Service]\nEnvironment=SLURM_FEDERATION_CLUSTER=${SLURM_FEDERATION_CLUSTER}\n" > ${s}.d/cluster.conf
+	echo -e "[Service]\nEnvironment=SLURM_FEDERATION_CLUSTER=${SLURM_FEDERATION_CLUSTER}\n" >${s}.d/cluster.conf
 done
 
 #start systemd
