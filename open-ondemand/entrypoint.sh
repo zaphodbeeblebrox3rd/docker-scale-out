@@ -26,4 +26,3 @@ exec /usr/local/bin/launch-httpd
 
 cd /var/www/ood/apps/sys/activejobs
 scl enable rh-ruby22 -- bin/setup
-
