@@ -19,7 +19,7 @@ if [ ! -f $CA_KEY ]; then
 fi
 
 # Check CA private key permissions
-if [ $(stat -c "%a" $CA_KEY) -ne $KEY_PERMISSIONS ]; then
+if [ "$(stat -c "%a" "$CA_KEY")" -ne "$KEY_PERMISSIONS" ]; then
 	echo "${BASH_SOURCE[@]}" ": Bad permissions for CA private key at '$CA_KEY'. Permissions should be $KEY_PERMISSIONS"
 	exit 1
 fi
