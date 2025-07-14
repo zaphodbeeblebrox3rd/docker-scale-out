@@ -4,7 +4,8 @@
 cat /etc/hosts.nodes >>/etc/hosts
 
 #ensure the systemd cgroup directory exists for enroot
-mkdir -p $(awk -F: '$2 ~ /systemd/ {printf "/sys/fs/cgroup/systemd/%s", $3}' /proc/self/cgroup)
+awk -F: '$2 ~ /systemd/ {printf "/sys/fs/cgroup/systemd/%s", $3}' /proc/self/cgroup | \
+	xargs mkdir -p
 
 #systemd user@.service handles on normal nodes
 for i in arnold bambam barney betty chip dino edna fred gazoo pebbles wilma; do
