@@ -571,7 +571,7 @@ $LOGGING
 $HOSTLIST
 EOF
 
-([ $oi -gt 100 ] && [ ! -z "$name" ]) && oi=0 && lastname="$name"
+	([ $oi -gt 100 ] && [ ! -z "$name" ]) && oi=0 && lastname="$name"
 done
 
 [ "$CLOUD" ] && cat <<EOF

@@ -86,14 +86,14 @@ if [ "${IS_MGT}${IS_FMGT}" != "" ]; then
 
 	if [ ! $disable_keycloak ]; then
 		keys=$(jq '.keys | length' /etc/slurm/jwks.json)
-        while ( [ $? -eq 0 ] && [[ "$keys" =~ ^[[:digit:]]+$ ]] && [ "$keys" -gt 0 ]); do
+		while ([ $? -eq 0 ] && [[ $keys =~ ^[[:digit:]]+$ ]] && [ "$keys" -gt 0 ]); do
 			echo "Downloading JWKS"
 			curl -s "http://{SUBNET}.1.23:8080/realms/master/protocol/openid-connect/certs" >/etc/slurm/jwks.json
 		done
 	fi
 else
 	#wait for primary mgt node to be done starting up
-	while ([ ! -s /etc/slurm/nodes.conf ] || "$(scontrol --json ping | jq -r '.pings[0].pinged')" != "UP" ); do
+	while ([ ! -s /etc/slurm/nodes.conf ] || "$(scontrol --json ping | jq -r '.pings[0].pinged')" != "UP"); do
 		sleep 0.25
 	done
 fi

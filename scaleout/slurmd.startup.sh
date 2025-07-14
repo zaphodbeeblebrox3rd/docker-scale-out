@@ -39,7 +39,7 @@ done
 		#init this cloud node
 		host="$(echo "whoami:$(hostname)" | socat -t999 STDIO UNIX-CONNECT:/run/cloud_socket)"
 
-        ([ -z "$host" ] || [ "$host" == "FAIL" ]) && sleep 0.25 && continue
+		([ -z "$host" ] || [ "$host" == "FAIL" ]) && sleep 0.25 && continue
 
 		src=$(getip)
 
