@@ -14,7 +14,7 @@ for ((try = 0; try < MAX_TRY; try++)); do
 		exit 1
 	fi
 
-	sleep $(echo "scale=5; 0.1 * $try" | bc)
+	sleep "$(echo "scale=5; 0.1 * $try" | bc)" | xargs sleep
 done
 
 exec srun -N10 uptime
