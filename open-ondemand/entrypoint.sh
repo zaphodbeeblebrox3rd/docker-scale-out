@@ -4,8 +4,8 @@
 # /home must be mounted in order to add users with correct UIDs
 #
 groupadd -g 1005 bedrock
-cd /home
-for i in $(ls); do
+cd /home || exit
+for i in *; do
 	TUID=$(stat -c %u /home/$i)
 	/opt/rh/httpd24/root/usr/bin/htpasswd -b /opt/rh/httpd24/root/etc/httpd/.htpasswd $i password
 	/usr/sbin/useradd -M -u $TUID -c $i -g users -G bedrock $i
@@ -21,6 +21,3 @@ done
 chmod 0664 /var/www/ood/apps/sys/myjobs/log/production.log
 
 exec /usr/local/bin/launch-httpd
-
-cd /var/www/ood/apps/sys/activejobs
-scl enable rh-ruby22 -- bin/setup

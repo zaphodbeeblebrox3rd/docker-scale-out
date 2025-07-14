@@ -1,5 +1,5 @@
 #!/bin/bash
-exec 1> >(logger -s -t $(basename $0)) 2>&1
+exec 1> >(logger -s -t "$(basename $0)") 2>&1
 
 function getmip {
 	#Avoid IPv6 until bug#11321 is resolved
@@ -13,7 +13,7 @@ function getmip {
 }
 
 function getip {
-	ip route get $(getmip) | awk '
+	ip route get "$(getmip)" | awk '
 		{
 			for (i = 1; i <= NF; i++) {
 				if ($i == "src") {
@@ -34,12 +34,12 @@ while [ ! -s /etc/slurm/nodes.conf ]; do
 	sleep 0.25
 done
 
-[ "$CLOUD" -a ! -f /etc/cloud-configured ] &&
+([ "$CLOUD" ] && [ ! -f /etc/cloud-configured ]) &&
 	while true; do
 		#init this cloud node
 		host="$(echo "whoami:$(hostname)" | socat -t999 STDIO UNIX-CONNECT:/run/cloud_socket)"
 
-		[ -z "$host" -o "$host" == "FAIL" ] && sleep 0.25 && continue
+        ([ -z "$host" ] || [ "$host" == "FAIL" ]) && sleep 0.25 && continue
 
 		src=$(getip)
 

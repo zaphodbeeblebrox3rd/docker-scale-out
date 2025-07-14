@@ -1,5 +1,5 @@
 #!/bin/bash
-[ -z "$1" -o -z "$2" ] && echo "USAGE:\n$0 {user_name} {user_password}" && exit 1
+([ -z "$1" ] || [ -z "$2" ]) && echo "USAGE:\n$0 {user_name} {user_password}" && exit 1
 
 curl -s \
 	-d "client_id=test" \

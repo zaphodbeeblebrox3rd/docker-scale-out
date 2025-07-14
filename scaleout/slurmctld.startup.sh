@@ -3,6 +3,7 @@
 [ -f /var/run/slurmctld.startup ] && exit 0
 
 HOST="$(cat /etc/hostname)"
+export disable_keycloack="{DISABLE_KEYCLOAK}"
 
 sed -e '/^hosts:/d' -i /etc/nsswitch.conf
 echo 'hosts: files myhostname' >>/etc/nsswitch.conf
@@ -83,16 +84,16 @@ if [ "${IS_MGT}${IS_FMGT}" != "" ]; then
 	#sacctmgr -vi add user dino Account=bedrock DefaultAccount=bedrock admin=admin
 	#sacctmgr -vi add user pebbles Account=bedrock DefaultAccount=bedrock admin=admin
 
-	if [ ! {DISABLE_KEYCLOAK} ]; then
+	if [ ! $disable_keycloak ]; then
 		keys=$(jq '.keys | length' /etc/slurm/jwks.json)
-		while [ [ $? -eq 0 ] -a [[ "$keys" =~ ^[[:digit:]]+$ ]] -a [ "$keys" -gt 0 ] ]; do
+        while ( [ $? -eq 0 ] && [[ "$keys" =~ ^[[:digit:]]+$ ]] && [ "$keys" -gt 0 ]); do
 			echo "Downloading JWKS"
 			curl -s "http://{SUBNET}.1.23:8080/realms/master/protocol/openid-connect/certs" >/etc/slurm/jwks.json
 		done
 	fi
 else
 	#wait for primary mgt node to be done starting up
-	while [ ! -s /etc/slurm/nodes.conf -o "$(scontrol --json ping | jq -r '.pings[0].pinged')" != "UP" ]; do
+	while ([ ! -s /etc/slurm/nodes.conf ] || "$(scontrol --json ping | jq -r '.pings[0].pinged')" != "UP" ); do
 		sleep 0.25
 	done
 fi

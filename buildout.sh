@@ -29,7 +29,7 @@ CACHE_DESTROYER="$(find scaleout/patch.d -type f -name '*.patch' -print0 | sort 
 
 SLURM_RELEASE="${SLURM_RELEASE:-master}"
 DISTRO="almalinux:8"
-if [ -z "$SUBNET" -o "$SUBNET" = "10.11" ]; then
+if ([ -z "$SUBNET" ] || [ "$SUBNET" = "10.11" ]); then
 	ES_PORTS="
     ports:
       - 9200:9200
@@ -94,10 +94,10 @@ else
 	export CMAKE_BUILD_TYPE="Debug"
 fi
 
-if [ ! -s "$NODELIST" -o "$SLURM_BENCHMARK" ]; then
+if ([ ! -s "$NODELIST" ] || [ "$SLURM_BENCHMARK" ]); then
 	if [ ! -z "$FEDERATION" ]; then
 		c_sub=5
-		[ -f "$NODELIST" ] && unlink "$NODELIST" 2>&1 >/dev/null
+		[ -f "$NODELIST" ] && unlink "$NODELIST" >/dev/null 2>&1
 		for c in $FEDERATION; do
 			#generate list nodes per cluster
 			seq 0 $NODES_COUNT | while read i; do
@@ -241,7 +241,7 @@ fi
 if [ "$CLOUD" ]; then
 	CLOUD_MOUNTS="
       - type: bind
-        source: $(readlink -e $(pwd)/cloud_socket)
+        source: $(readlink -e "$(pwd)/cloud_socket")
         target: /run/cloud_socket
 "
 else
@@ -571,7 +571,7 @@ $LOGGING
 $HOSTLIST
 EOF
 
-	[ $oi -gt 100 -a ! -z "$name" ] && oi=0 && lastname="$name"
+([ $oi -gt 100 ] && [ ! -z "$name" ]) && oi=0 && lastname="$name"
 done
 
 [ "$CLOUD" ] && cat <<EOF

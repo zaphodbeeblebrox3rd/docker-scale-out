@@ -8,7 +8,7 @@ function pingit {
 }
 
 #wait until the daemon is responding
-while [ $(pingit) != 0 ]; do
+while [ "$(pingit)" != 0 ]; do
 	sleep 0.1
 done
 

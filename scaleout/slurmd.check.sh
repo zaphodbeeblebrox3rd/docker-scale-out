@@ -1,5 +1,5 @@
 #!/bin/bash
-exec 1> >(logger -s -t $(basename $0)) 2>&1
+exec 1> >(logger -s -t "$(basename $0)") 2>&1
 
 # Import our environment variables from systemd
 # https://unix.stackexchange.com/questions/146995/inherit-environment-variables-in-systemd-docker-container
