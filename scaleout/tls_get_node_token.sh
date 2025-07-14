@@ -11,7 +11,7 @@ if [ ! -f $TOKEN_PATH ]; then
 fi
 
 # Check node private key permissions
-if [ $(stat -c "%a" $TOKEN_PATH) -ne $TOKEN_PERMISSIONS ]; then
+if [ "$(stat -c "%a" "$TOKEN_PATH")" -ne "$TOKEN_PERMISSIONS" ]; then
 	echo "${BASH_SOURCE[@]}" ": Bad permissions for node token at '$TOKEN_PATH'. Permissions should be $TOKEN_PERMISSIONS"
 	exit 1
 fi
