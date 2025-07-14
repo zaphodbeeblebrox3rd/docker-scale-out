@@ -4,7 +4,7 @@ index 5359189bf6..58a2a1e563 100644
 +++ b/coregrind/m_initimg/initimg-linux.c
 @@ -1151,7 +1151,7 @@ IIFinaliseImageInfo VG_(ii_create_image)( IICreateImageInfo iicii,
     //--------------------------------------------------------------
-    { 
+    {
        SizeT m1 = 1024 * 1024;
 -      SizeT m8 = 8 * m1;
 +      SizeT m8 = 4096 * m1;

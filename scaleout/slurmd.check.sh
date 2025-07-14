@@ -11,7 +11,7 @@ done
 [ "$CLOUD" ] && exit 0
 
 exec awk -vhost="$(hostname -s)" '
-	BEGIN {rc = 1} 
-	$1 == host {rc=0} 
+	BEGIN {rc = 1}
+	$1 == host {rc=0}
 	END {exit rc}
 ' /etc/nodelist
