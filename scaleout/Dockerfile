@@ -49,7 +49,7 @@ ARG DISABLE_DEVELOPER
 RUN [ ! ${DISABLE_DEVELOPER} ] && ( \
 	git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/ && \
 	cd /usr/local/src/valgrind/ && \
-	git apply /usr/local/src/valgrind.patch && \
+	patch -p1 < /usr/local/src/valgrind.patch && \
 	./autogen.sh && \
 	./configure --prefix=/usr/local/ && \
         make -j && \
