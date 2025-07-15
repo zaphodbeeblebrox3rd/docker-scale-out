@@ -67,36 +67,38 @@ RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
 RUN pip3 install certifi pip wheel setuptools markdown pydantic dateutils
 RUN git clone --depth 1 --single-branch -b v1.15.2 https://github.com/benmcollins/libjwt.git /usr/local/src/libjwt/
 WORKDIR /usr/local/src/libjwt
-RUN autoreconf --force --install >/dev/null && \
-	./configure --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
-	make -j >/dev/null && \
-	make install >/dev/null
+RUN autoreconf --force --install &>/dev/null && \
+	./configure --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
+	make -j &>/dev/null && \
+	make install &>/dev/null
 RUN git clone --depth 1 --single-branch -b jq-1.6 https://github.com/stedolan/jq.git /usr/local/src/jq/
 WORKDIR /usr/local/src/jq
-RUN autoreconf --force --install >/dev/null && \
-	./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode >/dev/null && \
-	make -j >/dev/null && \
-	make install >/dev/null
+RUN autoreconf --force --install &>/dev/null && \
+	./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode &>/dev/null && \
+	make -j &>/dev/null && \
+	make install &>/dev/null
 RUN git clone --depth 1 --single-branch -b munge-0.5.13 https://github.com/dun/munge.git /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
-	autoreconf -i >/dev/null && \
-	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
-	make -j >/dev/null && \
-	make install >/dev/null
+	autoreconf -i &>/dev/null && \
+	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
+	make -j &>/dev/null && \
+	make install &>/dev/null
 ARG DISABLE_GDB_BUILD
 RUN test ! ${DISABLE_GDB_BUILD} -a ! ${DISABLE_DEVELOPER} && ( \
 	git clone --depth 1 --single-branch -b gdb-16.3-release https://github.com/bminor/binutils-gdb.git /usr/local/src/gdb/ && \
 	cd /usr/local/src/gdb/ && \
 	autoreconf -i >/dev/null && \
-	./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
-	make -j >/dev/null && make install >/dev/null ) || ( \
+	./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
+	make -j &>/dev/null && make install &>/dev/null ) || ( \
 	echo "Skipping GDB build" )
 RUN mkdir -p /etc/slurm/plugstack.conf.d/ /etc/pmix
 RUN git clone -b hdf5-1_10_6 --single-branch --depth 1 https://github.com/HDFGroup/hdf5.git /usr/local/src/hdf5
 WORKDIR /usr/local/src/hdf5
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--enable-build-mode=production --disable-dependency-tracking --enable-profiling=no" || ARGS="--enable-build-mode=debug"; \
-	./configure --prefix=/usr/local/ $ARGS >/dev/null && make -j install >/dev/null
+	./configure --prefix=/usr/local/ $ARGS &>/dev/null && \
+	make -j &>/dev/null && \
+	make -j install &>/dev/null
 RUN git clone --depth 1 --single-branch -b release-2.1.12-stable https://github.com/libevent/libevent.git /usr/local/src/libevent/
 WORKDIR /usr/local/src/libevent
 RUN ./autogen.sh && ./configure --prefix=/usr/local >/dev/null && make -j >/dev/null && make install >/dev/null
@@ -112,7 +114,7 @@ WORKDIR /usr/local/src/pmix
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || ARGS="--enable-debug --with-devel-headers"; \
 	./autogen.pl >/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-tests-examples $ARGS --with-libevent=/usr/local/ --enable-ipv6 >/dev/null && \
-	make -j >/dev/null && \
+	make -j &>/dev/null && \
 	make install >/dev/null
 RUN git clone --depth 1 --single-branch -b master https://github.com/SchedMD/slurm.git /usr/local/src/slurm && \
 	git config --global --add safe.directory /usr/local/src/slurm
@@ -174,7 +176,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	$ARGS --without-cma --with-libevent=/usr/local \
 	--with-libevent-header=/usr/local/include --with-libevent-libs=/usr/local/lib \
 	--with-hwloc=/usr/local/ --enable-mca-no-build=btl-uct >/dev/null && \
-	make -j >/dev/null && \
+	make -j &>/dev/null && \
 	make install >/dev/null
 WORKDIR /usr/local/src/
 RUN wget -q 'https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.0rc9.tar.gz' -O /usr/local/src/openmpi5.tar.gz && \
@@ -187,7 +189,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	--with-libevent-header=/usr/local/include \
 	--with-libevent-libs=/usr/local/lib --with-hwloc=/usr/local/ \
 	--enable-mca-no-build=btl-uct >/dev/null \
-	&& make -j >/dev/null && \
+	&& make -j &>/dev/null && \
 	make install >/dev/null
 RUN git clone --depth 1 --branch msmtp-1.8.6 https://github.com/marlam/msmtp-mirror.git /usr/local/src/msmtp
 WORKDIR /usr/local/src/msmtp
