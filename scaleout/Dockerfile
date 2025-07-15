@@ -36,6 +36,8 @@ RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	ln -s /usr/lib/python3.6/site-packages/ptyprocess/ /usr/lib/python3.11/site-packages/ptyprocess
 ARG CMAKE_BUILD_TYPE
 ENV CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+#Turn off warnings about detached head
+RUN git config --global advice.detachedHead false
 RUN git clone --depth 1 --single-branch -b v1.5.18 https://github.com/aws/s2n-tls.git /usr/local/src/s2n-tls/
 WORKDIR /usr/local/src/s2n-tls/
 RUN cmake . -Bbuild \
