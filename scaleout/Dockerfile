@@ -37,7 +37,9 @@ RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 ARG CMAKE_BUILD_TYPE
 ENV CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 #Turn off warnings about detached head
-RUN git config --global advice.detachedHead false
+RUN git config --global advice.detachedHead false && \
+	git config --global user.email "you@example.com" && \
+	git config --global user.name "scale out"
 RUN git clone --depth 1 --single-branch -b v1.5.18 https://github.com/aws/s2n-tls.git /usr/local/src/s2n-tls/
 WORKDIR /usr/local/src/s2n-tls/
 RUN cmake . -Bbuild \
@@ -105,9 +107,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || 
 RUN git clone --depth 1 --single-branch -b master https://github.com/SchedMD/slurm.git /usr/local/src/slurm && \
 	git config --global --add safe.directory /usr/local/src/slurm
 WORKDIR /usr/local/src/slurm
-RUN git config --global user.email "you@example.com" && \
-	git config --global user.name "scale out" && \
-	git fetch --depth 1 origin ${SLURM_RELEASE} && \
+RUN git fetch --depth 1 origin ${SLURM_RELEASE} && \
 	git checkout FETCH_HEAD
 RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
 		CONF_ARGS=""; \
