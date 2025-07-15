@@ -29,8 +29,7 @@ CACHE_DESTROYER="$(find scaleout/patch.d -type f -name '*.patch' -print0 | sort 
 
 SLURM_RELEASE="${SLURM_RELEASE:-master}"
 DISTRO="almalinux:8"
-if [ -z "$SUBNET" -o "$SUBNET" = "10.11" ]
-then
+if ([ -z "$SUBNET" ] || [ "$SUBNET" = "10.11" ]); then
 	ES_PORTS="
     ports:
       - 9200:9200
@@ -72,61 +71,53 @@ SUBNET=${SUBNET:-"10.11"}
 SUBNET6=${SUBNET6:-"2001:db8:1:1::"}
 NODELIST=${NODELIST:-"scaleout/nodelist"}
 
-if [ ! -z "$SLURM_BENCHMARK" ]
-then
+if [ ! -z "$SLURM_BENCHMARK" ]; then
 	export DISABLE_DEVELOPER=1
-MYSQL_VOLUMES="
+	MYSQL_VOLUMES="
     volumes:
       - type: tmpfs
         target: /var/lib/mysql
 "
-NODES_COUNT=100
-BUILD_ARGS="
+	NODES_COUNT=100
+	BUILD_ARGS="
         SLURM_BENCHMARK: ${SLURM_BENCHMARK}
 "
 else
-MYSQL_VOLUMES=""
-NODES_COUNT=9
-BUILD_ARGS=""
+	MYSQL_VOLUMES=""
+	NODES_COUNT=9
+	BUILD_ARGS=""
 fi
 
-if [ ! -z $DISABLE_DEVELOPER ]
-then
+if [ ! -z $DISABLE_DEVELOPER ]; then
 	export CMAKE_BUILD_TYPE="Release"
 else
 	export CMAKE_BUILD_TYPE="Debug"
 fi
 
-if [ ! -s "$NODELIST" -o "$SLURM_BENCHMARK" ]
-then
-	if [ ! -z "$FEDERATION" ]
-	then
+if ([ ! -s "$NODELIST" ] || [ "$SLURM_BENCHMARK" ]); then
+	if [ ! -z "$FEDERATION" ]; then
 		c_sub=5
-		[ -f "$NODELIST" ] && unlink "$NODELIST" 2>&1 >/dev/null
-		for c in $FEDERATION
-		do
+		[ -f "$NODELIST" ] && unlink "$NODELIST" >/dev/null 2>&1
+		for c in $FEDERATION; do
 			#generate list nodes per cluster
-			seq 0 $NODES_COUNT | while read i
-			do
-				echo "$(printf "$c-node%02d" $i) $c ${SUBNET}.${c_sub}.$((${i} + 10)) ${SUBNET6}${c_sub}:$((${i} + 10))"
-			done >> $NODELIST
+			seq 0 $NODES_COUNT | while read i; do
+				echo "$(printf "$c-node%02d" $i) $c ${SUBNET}.${c_sub}.$((i + 10)) ${SUBNET6}${c_sub}:$((i + 10))"
+			done >>$NODELIST
 
-			c_sub=$((c_sub+1))
+			c_sub=$((c_sub + 1))
 		done
 	else
 		#generate list of 10 nodes
-		seq 0 $NODES_COUNT | while read i
-		do
-			echo "$(printf "node%02d" $i) cluster ${SUBNET}.5.$((${i} + 10)) ${SUBNET6}5:$((${i} + 10))"
-		done > $NODELIST
+		seq 0 $NODES_COUNT | while read i; do
+			echo "$(printf "node%02d" $i) cluster ${SUBNET}.5.$((i + 10)) ${SUBNET6}5:$((i + 10))"
+		done >$NODELIST
 	fi
 fi
 
 unlink scaleout/hosts.nodes
-cat "$NODELIST" | while read name cluster ip4 ip6
-do
-	[ ! -z "$ip4" ] && echo "$ip4 $name" >> scaleout/hosts.nodes
-	[ ! -z "$ip6" ] && echo "$ip6 $name" >> scaleout/hosts.nodes
+cat "$NODELIST" | while read name cluster ip4 ip6; do
+	[ ! -z "$ip4" ] && echo "$ip4 $name" >>scaleout/hosts.nodes
+	[ ! -z "$ip6" ] && echo "$ip6 $name" >>scaleout/hosts.nodes
 done
 
 HOSTLIST="    extra_hosts:
@@ -160,14 +151,12 @@ HOSTLIST="    extra_hosts:
       - \"keycloak:${SUBNET6}1:23\"
 "
 
-if [ ! -z "$FEDERATION" ]
-then
+if [ ! -z "$FEDERATION" ]; then
 	FIRST_CLUSTER="$(echo "$FEDERATION" | awk '{print $1}')"
 	FIRST_MGMTNODE="${FIRST_CLUSTER}-mgmtnode"
 	c_sub=5
 
-	for c in $FEDERATION
-	do
+	for c in $FEDERATION; do
 		HOSTLIST="${HOSTLIST}      - \"${c}-mgmtnode:${SUBNET}.${c_sub}.1\""$'\n'
 		HOSTLIST="${HOSTLIST}      - \"${c}-mgmtnode:${SUBNET6}${c_sub}:1\""$'\n'
 		HOSTLIST="${HOSTLIST}      - \"${c}-mgmtnode2:${SUBNET}.${c_sub}.2\""$'\n'
@@ -223,8 +212,7 @@ $LOGGING
 $HOSTLIST
 "
 
-if [ "$DISABLE_XDMOD" ]
-then
+if [ "$DISABLE_XDMOD" ]; then
 	XDMOD=""
 fi
 
@@ -246,16 +234,14 @@ $LOGGING
 $KEYCLOAK_PORTS
 "
 
-if [ "$DISABLE_KEYCLOAK" ]
-then
+if [ "$DISABLE_KEYCLOAK" ]; then
 	KEYCLOAK=""
 fi
 
-if [ "$CLOUD" ]
-then
+if [ "$CLOUD" ]; then
 	CLOUD_MOUNTS="
       - type: bind
-        source: $(readlink -e $(pwd)/cloud_socket)
+        source: $(readlink -e "$(pwd)/cloud_socket")
         target: /run/cloud_socket
 "
 else
@@ -284,11 +270,9 @@ volumes:
   etc-ssh:
 EOF
 
-if [ ! -z "$FEDERATION" ]
-then
+if [ ! -z "$FEDERATION" ]; then
 
-	for c in $FEDERATION
-	do
+	for c in $FEDERATION; do
 		cat <<EOF
   ${c}-etc-slurm:
   ${c}-slurmctld:
@@ -297,7 +281,7 @@ EOF
 
 else
 
-cat <<EOF
+	cat <<EOF
   cluster-etc-slurm:
   slurmctld:
 EOF
@@ -375,15 +359,13 @@ $LOGGING
 $HOSTLIST
 EOF
 
-if [ ! -z "$FEDERATION" ]
-then
+if [ ! -z "$FEDERATION" ]; then
 	LOGIN_MOUNTS=
 
 	c_sub=5
-	for c in $FEDERATION
-	do
+	for c in $FEDERATION; do
 
-cat <<EOF
+		cat <<EOF
   ${c}-mgmtnode:
     image: scaleout:latest
     environment:
@@ -442,14 +424,14 @@ $LOGGING
 $HOSTLIST
 EOF
 
-		c_sub=$((c_sub+1))
+		c_sub=$((c_sub + 1))
 	done
 
 else
 
 	LOGIN_MOUNTS="      - slurmctld:/var/spool/slurm"
 
-cat <<EOF
+	cat <<EOF
   mgmtnode:
     image: scaleout:latest
     environment:
@@ -540,19 +522,18 @@ EOF
 lastcluster="$FIRST_CLUSTER"
 lastname="$FIRST_MGMTNODE"
 oi=0
-cat "$NODELIST" | while read name cluster ip4 ip6
-do
+cat "$NODELIST" | while read name cluster ip4 ip6; do
 	[ "$cluster" != "$lastcluster" ] && lastname="${cluster}-mgmtnode"
 	lastcluster="$cluster"
 
-	oi=$(($oi + 1))
-	i=$(($i + 1))
+	oi=$((oi + 1))
+	i=$((i + 1))
 
 	i4=
 	i6=
 	[ ! -z "$ip4" ] && i4="ipv4_address: $ip4"
 	[ ! -z "$ip6" ] && i6="ipv6_address: $ip6"
-cat <<EOF
+	cat <<EOF
   $name:
     image: scaleout:latest
     environment:
@@ -590,7 +571,7 @@ $LOGGING
 $HOSTLIST
 EOF
 
-	[ $oi -gt 100 -a ! -z "$name" ] && oi=0 && lastname="$name"
+	([ $oi -gt 100 ] && [ ! -z "$name" ]) && oi=0 && lastname="$name"
 done
 
 [ "$CLOUD" ] && cat <<EOF
@@ -830,4 +811,3 @@ $KEYCLOAK
 EOF
 
 exit 0
-
