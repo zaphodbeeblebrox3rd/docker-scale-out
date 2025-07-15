@@ -44,11 +44,16 @@ RUN cmake . -Bbuild \
 		-DS2N_INSTALL_S2NC_S2ND=1 && \
 	cmake --build build -j $(nproc) && \
 	cmake --install build
-RUN git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/
-COPY valgrind.patch /usr/local/src/valgrind/
-WORKDIR /usr/local/src/valgrind/
-RUN git apply valgrind.patch && ./autogen.sh && ./configure --prefix=/usr/local/ && \
-        make -j && sudo make install
+COPY valgrind.patch /usr/local/src/valgrind.patch
+ARG DISABLE_DEVELOPER
+RUN [ ! ${DISABLE_DEVELOPER} ] && ( \
+	git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/ && \
+	cd /usr/local/src/valgrind/ && \
+	git apply /usr/local/src/valgrind.patch && \
+	./autogen.sh && \
+	./configure --prefix=/usr/local/ && \
+        make -j && \
+	sudo make install ) || true
 RUN git clone --depth 1 --single-branch -b v3.9.2 https://github.com/luarocks/luarocks.git /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ && make -j && make install
@@ -62,7 +67,6 @@ WORKDIR /usr/local/src/jq
 RUN autoreconf --force --install && ./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode && make -j && make install
 RUN git clone --depth 1 --single-branch -b munge-0.5.13 https://github.com/dun/munge.git /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
-ARG DISABLE_DEVELOPER
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
 	autoreconf -i && \
 	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
