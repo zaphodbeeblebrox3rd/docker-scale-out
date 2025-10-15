@@ -85,13 +85,12 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode"
 	make -j &>/dev/null && \
 	make install &>/dev/null
 ARG DISABLE_GDB_BUILD
-RUN test ! ${DISABLE_GDB_BUILD} -a ! ${DISABLE_DEVELOPER} && ( \
+RUN test ${DISABLE_GDB_BUILD} -o ${DISABLE_DEVELOPER} || ( \
 	git clone --depth 1 --single-branch -b gdb-16.3-release https://github.com/bminor/binutils-gdb.git /usr/local/src/gdb/ && \
 	cd /usr/local/src/gdb/ && \
 	autoreconf -i >/dev/null && \
-	./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ --with-lzma &>/dev/null && \
-	make -j &>/dev/null && make install &>/dev/null ) || ( \
-	echo "Skipping GDB build" )
+	./configure --localstatedir=/var --prefix=/usr/local/ --sysconfdir=/etc/ --with-lzma &>/dev/null && \
+	make -j &>/dev/null && make install &>/dev/null )
 RUN mkdir -p /etc/slurm/plugstack.conf.d/ /etc/pmix
 RUN git clone -b hdf5-1_10_6 --single-branch --depth 1 https://github.com/HDFGroup/hdf5.git /usr/local/src/hdf5
 WORKDIR /usr/local/src/hdf5
