@@ -50,14 +50,14 @@ RUN cmake . -Bbuild \
 	cmake --install build >/dev/null
 COPY valgrind.patch /usr/local/src/valgrind.patch
 ARG DISABLE_DEVELOPER
-RUN [ ! ${DISABLE_DEVELOPER} ] && ( \
+RUN [ ${DISABLE_DEVELOPER} ] || ( \
 	git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/ && \
 	cd /usr/local/src/valgrind/ && \
 	patch -p1 < /usr/local/src/valgrind.patch && \
 	./autogen.sh >/dev/null && \
 	./configure --prefix=/usr/local/ >/dev/null && \
         make -j >/dev/null && \
-	sudo make install >/dev/null ) || true
+	sudo make install >/dev/null )
 RUN git clone --depth 1 --single-branch -b v3.9.2 https://github.com/luarocks/luarocks.git /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
