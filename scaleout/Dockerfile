@@ -16,7 +16,7 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	perl-Switch expect lua-devel rrdtool-devel lz4-devel json-c-devel \
 	libcurl-devel freeipmi-devel numactl-devel lynx numactl \
 	rdma-core-devel gcc-c++ flex libgcrypt-devel gcc-gfortran \
-	strace ltrace wget cmake sudo jansson-devel \
+	strace ltrace wget cmake sudo jansson-devel xz-devel \
 	openssh-server pam-devel xterm oniguruma-devel xmvn \
 	lua-devel xauth man mailx postfix http-parser-devel \
 	libyaml-devel mlocate gettext-devel texinfo java-21-openjdk-devel \
