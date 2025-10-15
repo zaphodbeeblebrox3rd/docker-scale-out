@@ -91,6 +91,8 @@ RUN test ${DISABLE_GDB_BUILD} -o ${DISABLE_DEVELOPER} || ( \
 	autoreconf -i >/dev/null && \
 	./configure --localstatedir=/var --prefix=/usr/local/ --sysconfdir=/etc/ --with-lzma &>/dev/null && \
 	make -j &>/dev/null && make install &>/dev/null )
+# Link already installed gdb if gdb not built
+RUN test -e /usr/local/bin/gdb || ln -nfs /usr/libexec/gdb /usr/local/bin/gdb
 RUN mkdir -p /etc/slurm/plugstack.conf.d/ /etc/pmix
 RUN git clone -b hdf5-1_10_6 --single-branch --depth 1 https://github.com/HDFGroup/hdf5.git /usr/local/src/hdf5
 WORKDIR /usr/local/src/hdf5
