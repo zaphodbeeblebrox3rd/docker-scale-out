@@ -58,7 +58,7 @@ RUN [ ${DISABLE_DEVELOPER} ] || ( \
 	./autogen.sh >/dev/null && \
 	./configure --prefix=/usr/local/ >/dev/null && \
         make -j >/dev/null && \
-	sudo make install >/dev/null )
+	make install >/dev/null )
 RUN git clone --depth 1 --single-branch -b v3.9.2 https://github.com/luarocks/luarocks.git /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
