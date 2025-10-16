@@ -174,7 +174,6 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	./configure --prefix=/usr/local/openmpi/4.1.4 --with-pmix=/usr/local \
 	--with-pmix-libdir=/usr/local/lib --with-pmi=/usr/local --with-slurm \
 	$ARGS --without-cma --with-libevent=/usr/local \
-	--with-libevent-header=/usr/local/include --with-libevent-libs=/usr/local/lib \
 	--with-hwloc=/usr/local/ --enable-mca-no-build=btl-uct >/dev/null && \
 	make -j &>/dev/null && \
 	make install >/dev/null
