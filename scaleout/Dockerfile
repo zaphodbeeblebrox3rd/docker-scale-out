@@ -16,7 +16,7 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	perl-Switch expect lua-devel rrdtool-devel lz4-devel json-c-devel \
 	libcurl-devel freeipmi-devel numactl-devel lynx numactl \
 	rdma-core-devel gcc-c++ flex libgcrypt-devel gcc-gfortran \
-	strace ltrace wget cmake sudo jansson-devel \
+	strace ltrace wget cmake sudo jansson-devel xz-devel \
 	openssh-server pam-devel xterm oniguruma-devel xmvn \
 	lua-devel xauth man mailx postfix http-parser-devel \
 	libyaml-devel mlocate gettext-devel texinfo java-21-openjdk-devel \
@@ -27,7 +27,8 @@ RUN dnf -y install --allowerasing --exclude google-chrome-* \
 	python3-setuptools-wheel python3-virtualenv python3-urllib3 \
 	python3-six python3-requests python3-pexpect \
 	python3.11 python3.11-pip python3.11-pytest python3.11-requests \
-	bc emacs nano gmp-devel mpfr-devel bison elfutils-debuginfod
+	bc emacs nano gmp-devel mpfr-devel bison elfutils-debuginfod \
+	>/dev/null
 RUN update-alternatives --set 'java' java-21-openjdk.x86_64 && \
 	alternatives --set python3 /usr/bin/python3.11 && \
 	ln -s $(which pytest-3.11) /usr/bin/pytest-3 && \
@@ -50,14 +51,14 @@ RUN cmake . -Bbuild \
 	cmake --install build >/dev/null
 COPY valgrind.patch /usr/local/src/valgrind.patch
 ARG DISABLE_DEVELOPER
-RUN [ ! ${DISABLE_DEVELOPER} ] && ( \
+RUN [ ${DISABLE_DEVELOPER} ] || ( \
 	git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/ && \
 	cd /usr/local/src/valgrind/ && \
 	patch -p1 < /usr/local/src/valgrind.patch && \
 	./autogen.sh >/dev/null && \
 	./configure --prefix=/usr/local/ >/dev/null && \
         make -j >/dev/null && \
-	sudo make install >/dev/null ) || true
+	make install >/dev/null )
 RUN git clone --depth 1 --single-branch -b v3.9.2 https://github.com/luarocks/luarocks.git /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
@@ -84,14 +85,14 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode"
 	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
 	make -j &>/dev/null && \
 	make install &>/dev/null
-ARG DISABLE_GDB_BUILD
-RUN test ! ${DISABLE_GDB_BUILD} -a ! ${DISABLE_DEVELOPER} && ( \
+RUN test ${DISABLE_DEVELOPER} || ( \
 	git clone --depth 1 --single-branch -b gdb-16.3-release https://github.com/bminor/binutils-gdb.git /usr/local/src/gdb/ && \
 	cd /usr/local/src/gdb/ && \
 	autoreconf -i >/dev/null && \
-	./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ --with-lzma &>/dev/null && \
-	make -j &>/dev/null && make install &>/dev/null ) || ( \
-	echo "Skipping GDB build" )
+	./configure --localstatedir=/var --prefix=/usr/local/ --sysconfdir=/etc/ --with-lzma &>/dev/null && \
+	make -j &>/dev/null && make install &>/dev/null )
+# Link already installed gdb if gdb not built
+RUN test -e /usr/local/bin/gdb || ln -nfs /usr/libexec/gdb /usr/local/bin/gdb
 RUN mkdir -p /etc/slurm/plugstack.conf.d/ /etc/pmix
 RUN git clone -b hdf5-1_10_6 --single-branch --depth 1 https://github.com/HDFGroup/hdf5.git /usr/local/src/hdf5
 WORKDIR /usr/local/src/hdf5
@@ -174,7 +175,6 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	./configure --prefix=/usr/local/openmpi/4.1.4 --with-pmix=/usr/local \
 	--with-pmix-libdir=/usr/local/lib --with-pmi=/usr/local --with-slurm \
 	$ARGS --without-cma --with-libevent=/usr/local \
-	--with-libevent-header=/usr/local/include --with-libevent-libs=/usr/local/lib \
 	--with-hwloc=/usr/local/ --enable-mca-no-build=btl-uct >/dev/null && \
 	make -j &>/dev/null && \
 	make install >/dev/null
@@ -215,7 +215,7 @@ RUN wget -q 'https://raw.githubusercontent.com/OpenAPITools/openapi-generator/ma
 	chmod +x /usr/local/bin/openapi-generator-cli && \
 	env OPENAPI_GENERATOR_VERSION=7.3.0 /usr/local/bin/openapi-generator-cli version
 ARG DISABLE_GNU_PARALLEL
-RUN test ! $DISABLE_GNU_PARALLEL && ( \
+RUN test $DISABLE_GNU_PARALLEL || ( \
 	wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp/parallel.tar.bz2 && \
 	mkdir -p /usr/local/src/parallel && \
 	tar --strip-components=1 -C /usr/local/src/parallel -xf /tmp/parallel.tar.bz2 && \
@@ -223,20 +223,20 @@ RUN test ! $DISABLE_GNU_PARALLEL && ( \
 	autoreconf -i >/dev/null && \
 	./configure >/dev/null && \
 	make -j >/dev/null && \
-	make install >/dev/null ) || echo "Skipping GNU parallel build"
+	make install >/dev/null)
 
 COPY enroot.conf /tmp/enroot.conf
 ARG DISABLE_PYXIS
 # squashfuse is only used by enroot
-RUN [ ! ${DISABLE_PYXIS} ] && ( \
+RUN [ ${DISABLE_PYXIS} ] || ( \
 	git clone --depth 1 --single-branch --branch 0.1.103 https://github.com/vasi/squashfuse.git /usr/local/src/squashfuse && \
 	cd /usr/local/src/squashfuse && \
 	autoreconf -i >/dev/null && \
-	./configure --disable-demo >/dev/null&& \
+	./configure --disable-demo >/dev/null && \
 	make -j >/dev/null && \
-	make install >/dev/null ) || true
+	make install >/dev/null )
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
-	[ ! ${DISABLE_PYXIS} ] && ( \
+	[ ${DISABLE_PYXIS} ] || ( \
 	git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxis.git /usr/local/src/pyxis && \
 	cd /usr/local/src/pyxis && \
 	make install >/dev/null && \
@@ -247,7 +247,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
 	make setcap && \
 	ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	mkdir -m 0755 -p /etc/enroot/ && \
-	mv /tmp/enroot.conf /etc/enroot/enroot.conf ) || true
+	mv /tmp/enroot.conf /etc/enroot/enroot.conf )
 RUN git clone --depth 1 --single-branch --branch V0.12.10 https://github.com/ColinIanKing/stress-ng.git /usr/local/src/stressng
 WORKDIR /usr/local/src/stressng
 RUN make -j >/dev/null && \
