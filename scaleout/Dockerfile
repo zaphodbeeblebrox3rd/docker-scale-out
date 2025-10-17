@@ -41,6 +41,7 @@ ENV CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 RUN git config --global advice.detachedHead false && \
 	git config --global user.email "you@example.com" && \
 	git config --global user.name "scale out"
+COPY src /usr/local/src/
 RUN git clone --depth 1 --single-branch -b v1.5.18 https://github.com/aws/s2n-tls.git /usr/local/src/s2n-tls/
 WORKDIR /usr/local/src/s2n-tls/
 RUN cmake . -Bbuild \
