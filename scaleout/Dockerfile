@@ -250,9 +250,6 @@ RUN export GOCACHE="$(mktemp -d)" && \
 	make -j >/dev/null && \
 	make podman >/dev/null && \
 	make install >/dev/null
-
-WORKDIR /usr/local/src/
-RUN git clone --depth 1 --single-branch -b v0.40 https://gitlab.com/charliecloud/main.git /usr/local/src/charliecloud
 WORKDIR /usr/local/src/charliecloud
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-maintainer-mode" || ARGS="--enable-maintainer-mode"; \
 	./autogen.sh >/dev/null && \

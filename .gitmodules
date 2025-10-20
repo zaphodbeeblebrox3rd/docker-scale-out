@@ -64,3 +64,6 @@
 [submodule "scaleout/src/podman"]
 	path = scaleout/src/podman
 	url = https://github.com/containers/podman.git
+[submodule "scaleout/src/charliecloud"]
+	path = scaleout/src/charliecloud
+	url = https://gitlab.com/charliecloud/main.git
