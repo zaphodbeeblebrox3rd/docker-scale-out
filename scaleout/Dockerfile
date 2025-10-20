@@ -215,7 +215,6 @@ COPY enroot.conf /tmp/enroot.conf
 ARG DISABLE_PYXIS
 # squashfuse is only used by enroot
 RUN [ ${DISABLE_PYXIS} ] || ( \
-	git clone --depth 1 --single-branch --branch 0.1.103 https://github.com/vasi/squashfuse.git /usr/local/src/squashfuse && \
 	cd /usr/local/src/squashfuse && \
 	autoreconf -i >/dev/null && \
 	./configure --disable-demo >/dev/null && \

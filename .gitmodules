@@ -40,3 +40,6 @@
 [submodule "scaleout/src/msmtp"]
 	path = scaleout/src/msmtp
 	url = https://github.com/marlam/msmtp-mirror.git
+[submodule "scaleout/src/squashfuse"]
+	path = scaleout/src/squashfuse
+	url = https://github.com/vasi/squashfuse.git
