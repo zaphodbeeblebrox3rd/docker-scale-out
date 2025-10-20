@@ -69,7 +69,6 @@ RUN autoreconf --force --install &>/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
 	make -j &>/dev/null && \
 	make install &>/dev/null
-RUN git clone --depth 1 --single-branch -b jq-1.6 https://github.com/stedolan/jq.git /usr/local/src/jq/
 WORKDIR /usr/local/src/jq
 RUN autoreconf --force --install &>/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode &>/dev/null && \

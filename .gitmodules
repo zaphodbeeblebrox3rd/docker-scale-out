@@ -10,3 +10,6 @@
 [submodule "scaleout/src/libjwt"]
 	path = scaleout/src/libjwt
 	url = https://github.com/benmcollins/libjwt.git
+[submodule "scaleout/src/jq"]
+	path = scaleout/src/jq
+	url = https://github.com/stedolan/jq.git
