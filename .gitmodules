@@ -76,3 +76,9 @@
 [submodule "scaleout/src/openapi-generator"]
 	path = scaleout/src/openapi-generator
 	url = https://github.com/OpenAPITools/openapi-generator.git
+[submodule "scaleout/src/openmpi/v4.1.4"]
+	path = scaleout/src/openmpi/v4.1.4
+	url = https://github.com/open-mpi/ompi.git
+[submodule "scaleout/src/openmpi/v5.0.0rc9"]
+	path = scaleout/src/openmpi/v5.0.0rc9
+	url = https://github.com/open-mpi/ompi.git
