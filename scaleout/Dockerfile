@@ -144,9 +144,9 @@ RUN /usr/sbin/groupadd -r munge && \
 	chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed && \
 	chown root:root /etc/munge/ -R && \
 	chown -R munge:munge /etc/munge
-RUN git clone --depth 1 --single-branch -b pdsh-2.35 https://github.com/chaos/pdsh.git /usr/local/src/pdsh/
 WORKDIR /usr/local/src/pdsh
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --enable-maintainer-mode"; \
+	sed -e 's#git describe --always#echo scaleout#' -i configure.ac && \
 	autoreconf -i >/dev/null && \
 	./configure $ARGS --disable-dependency-tracking --disable-code-coverage \
 		--without-rsh --without-mrsh --without-torque --without-dmalloc \
