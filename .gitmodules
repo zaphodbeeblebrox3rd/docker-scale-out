@@ -22,3 +22,6 @@
 [submodule "scaleout/src/hdf"]
 	path = scaleout/src/hdf
 	url = https://github.com/HDFGroup/hdf5.git
+[submodule "scaleout/src/libevent"]
+	path = scaleout/src/libevent
+	url = https://github.com/libevent/libevent.git
