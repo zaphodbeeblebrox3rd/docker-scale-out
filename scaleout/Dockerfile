@@ -240,13 +240,13 @@ RUN python3 ./setup.py install >/dev/null
 WORKDIR /usr/local/src/urllib3
 RUN python3 setup.py install >/dev/null
 
-RUN git clone --depth 1 --single-branch --branch v2.1.6 https://github.com/containers/conmon.git /usr/local/src/conmon && \
-	cd /usr/local/src/conmon && \
-	export GOCACHE="$(mktemp -d)" && \
-	make -j && make podman && make install && \
-	git clone --depth 1 --single-branch --branch v4.4.1 https://github.com/containers/podman.git /usr/local/src/podman && \
-	cd /usr/local/src/podman && \
-	export GOCACHE="$(mktemp -d)" && \
+WORKDIR /usr/local/src/conmon
+RUN export GOCACHE="$(mktemp -d)" && \
+	unlink .git && \
+	make -j && make podman && make install
+WORKDIR /usr/local/src/podman
+RUN export GOCACHE="$(mktemp -d)" && \
+	unlink .git && \
 	make -j >/dev/null && \
 	make podman >/dev/null && \
 	make install >/dev/null

@@ -58,3 +58,9 @@
 [submodule "scaleout/src/urllib3"]
 	path = scaleout/src/urllib3
 	url = https://github.com/urllib3/urllib3.git
+[submodule "scaleout/src/conmon"]
+	path = scaleout/src/conmon
+	url = https://github.com/containers/conmon.git
+[submodule "scaleout/src/podman"]
+	path = scaleout/src/podman
+	url = https://github.com/containers/podman.git
