@@ -234,7 +234,6 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
 WORKDIR /usr/local/src/stressng
 RUN make -j >/dev/null && \
 	make install >/dev/null
-RUN git clone --depth 1 --single-branch --branch v1.8.3 https://github.com/cea-hpc/clustershell.git /usr/local/src/clush
 WORKDIR /usr/local/src/clush
 RUN python3 ./setup.py install >/dev/null
 

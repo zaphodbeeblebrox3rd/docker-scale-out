@@ -52,3 +52,6 @@
 [submodule "scaleout/src/stressng"]
 	path = scaleout/src/stressng
 	url = https://github.com/ColinIanKing/stress-ng.git
+[submodule "scaleout/src/clush"]
+	path = scaleout/src/clush
+	url = https://github.com/cea-hpc/clustershell.git
