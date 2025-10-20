@@ -108,7 +108,6 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || 
 	./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-tests-examples $ARGS --with-libevent=/usr/local/ --enable-ipv6 >/dev/null && \
 	make -j &>/dev/null && \
 	make install >/dev/null
-RUN git config --global --add safe.directory /usr/local/src/slurm
 WORKDIR /usr/local/src/slurm
 RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
 		CONF_ARGS=""; \
@@ -414,6 +413,7 @@ RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 	env SLURM_RELEASE="${SLURM_RELEASE}" bash -c "\
 	if [ -s /usr/local/src/slurm/patch.list ]; then \
 		cd /usr/local/src/slurm/; \
+		git config --global --add safe.directory /usr/local/src/slurm; \
 		xargs -t -0 -r -n1 git am -3 --empty=keep --ignore-space-change --exclude=NEWS < /usr/local/src/slurm/patch.list && \
 		make -j >/dev/null && make install >/dev/null; \
 	fi"
