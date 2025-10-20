@@ -13,3 +13,6 @@
 [submodule "scaleout/src/jq"]
 	path = scaleout/src/jq
 	url = https://github.com/stedolan/jq.git
+[submodule "scaleout/src/munge"]
+	path = scaleout/src/munge
+	url = https://github.com/dun/munge.git

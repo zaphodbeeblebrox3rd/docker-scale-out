@@ -74,7 +74,6 @@ RUN autoreconf --force --install &>/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode &>/dev/null && \
 	make -j &>/dev/null && \
 	make install &>/dev/null
-RUN git clone --depth 1 --single-branch -b munge-0.5.13 https://github.com/dun/munge.git /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
 	autoreconf -i &>/dev/null && \
