@@ -178,7 +178,6 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	--enable-mca-no-build=btl-uct >/dev/null \
 	&& make -j &>/dev/null && \
 	make install >/dev/null
-RUN git clone --depth 1 --branch msmtp-1.8.6 https://github.com/marlam/msmtp-mirror.git /usr/local/src/msmtp
 WORKDIR /usr/local/src/msmtp
 RUN autoreconf -i && ./configure >/dev/null && \
 	make -j >/dev/null && \

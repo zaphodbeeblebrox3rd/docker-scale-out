@@ -37,3 +37,6 @@
 [submodule "scaleout/src/pdsh"]
 	path = scaleout/src/pdsh
 	url = https://github.com/chaos/pdsh.git
+[submodule "scaleout/src/msmtp"]
+	path = scaleout/src/msmtp
+	url = https://github.com/marlam/msmtp-mirror.git
