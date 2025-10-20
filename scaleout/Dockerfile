@@ -317,12 +317,12 @@ RUN awk '{if (match($1, /^(passwd|group)/)) {print $1, "slurm", $2, $3} else {pr
 	echo -e "node00\nnode01\nnode02\nnode03\nnode04\nnode05\nnode06\nnode07\nnode08\nnode09" > /etc/PDSH/hosts && \
 	cat /tmp/bashrc >> /etc/bashrc && unlink /tmp/bashrc && \
 	mandb
-RUN git clone --depth 1 --single-branch -b v1.0.5 https://github.com/CLIP-HPC/SlurmCommander.git /usr/local/src/slurmcommander/ && \
-	cd /usr/local/src/slurmcommander/ && \
-	make build >/dev/null && \
+WORKDIR /usr/local/src/slurmcommander/
+RUN make build >/dev/null && \
 	make install >/dev/null && \
 	mkdir -p /etc/scom && \
-	echo 'prefix="/usr/local/bin"' > /etc/scom/scom.conf && cp scom /usr/local/bin/scom
+	echo 'prefix="/usr/local/bin"' > /etc/scom/scom.conf && \
+	cp scom /usr/local/bin/scom
 
 COPY my.cnf /etc/
 RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /etc/my.cnf && \

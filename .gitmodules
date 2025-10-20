@@ -67,3 +67,6 @@
 [submodule "scaleout/src/charliecloud"]
 	path = scaleout/src/charliecloud
 	url = https://gitlab.com/charliecloud/main.git
+[submodule "scaleout/src/slurmcommander"]
+	path = scaleout/src/slurmcommander
+	url = https://github.com/CLIP-HPC/SlurmCommander.git
