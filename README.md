@@ -195,7 +195,7 @@ prior release.
 ## To build images
 
 ```
-git submodule update --init --force --remote --recursive
+git submodule update --init --recursive --checkout --recommend-shallow --single-branch
 make build
 ```
 
@@ -403,4 +403,10 @@ When this happens, fewer jobs must be run as this a kernel limitation.
 ```bash
 export SCALEOUT_DEFAULT_HOST=mgmtnode
 make bash
+```
+
+## To force clean git submodules
+
+```
+git submodule deinit -f .
 ```
