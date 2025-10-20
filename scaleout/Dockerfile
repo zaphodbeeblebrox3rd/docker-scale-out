@@ -95,7 +95,6 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--enable-build-mode=production --disable-d
 	make -j install &>/dev/null
 WORKDIR /usr/local/src/libevent
 RUN ./autogen.sh && ./configure --prefix=/usr/local >/dev/null && make -j >/dev/null && make install >/dev/null
-RUN git clone --depth 1 --single-branch -b hwloc-2.0.2 https://github.com/open-mpi/hwloc.git /usr/local/src/hwloc/
 WORKDIR /usr/local/src/hwloc
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --disable-picky"; \
 	./autogen.sh >/dev/null && \

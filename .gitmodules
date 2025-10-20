@@ -25,3 +25,6 @@
 [submodule "scaleout/src/libevent"]
 	path = scaleout/src/libevent
 	url = https://github.com/libevent/libevent.git
+[submodule "scaleout/src/hwloc"]
+	path = scaleout/src/hwloc
+	url = https://github.com/open-mpi/hwloc.git
