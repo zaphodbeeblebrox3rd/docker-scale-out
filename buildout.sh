@@ -27,6 +27,10 @@ unset MAC
 
 CACHE_DESTROYER="$(find scaleout/patch.d -type f -name '*.patch' -print0 | sort -z | xargs -0 cat | sha256sum | cut -b1-20)"
 
+# Checkout all submodules if Slurm source is not present
+test -d scaleout/src/slurm/.git -a -d scaleout/src/slurm/src ||
+	git submodule update --init --recursive --checkout --depth 1 --recommend-shallow --single-branch 1>&2
+
 SLURM_RELEASE="${SLURM_RELEASE:-master}"
 # checkout the correct Slurm branch as submodules will cache the wrong hash
 (
