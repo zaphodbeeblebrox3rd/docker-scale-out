@@ -231,7 +231,6 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
 	ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	mkdir -m 0755 -p /etc/enroot/ && \
 	mv /tmp/enroot.conf /etc/enroot/enroot.conf )
-RUN git clone --depth 1 --single-branch --branch V0.12.10 https://github.com/ColinIanKing/stress-ng.git /usr/local/src/stressng
 WORKDIR /usr/local/src/stressng
 RUN make -j >/dev/null && \
 	make install >/dev/null

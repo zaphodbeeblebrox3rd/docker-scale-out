@@ -49,3 +49,6 @@
 [submodule "scaleout/src/enroot"]
 	path = scaleout/src/enroot
 	url = https://github.com/NVIDIA/enroot.git
+[submodule "scaleout/src/stressng"]
+	path = scaleout/src/stressng
+	url = https://github.com/ColinIanKing/stress-ng.git
