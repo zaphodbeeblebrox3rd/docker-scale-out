@@ -368,7 +368,7 @@ RUN sed -e "s/{SUBNET6}/${SUBNET6}/" -e "s/{SUBNET}/${SUBNET}/" \
 	chmod 0755 /usr/local/bin/*.sh
 
 ARG DOCKER_FROM
-FROM ${DOCKER_FROM} as scaleout
+FROM ${DOCKER_FROM} AS scaleout
 ARG CACHE_DESTROYER
 COPY --from=base / /
 
