@@ -43,3 +43,9 @@
 [submodule "scaleout/src/squashfuse"]
 	path = scaleout/src/squashfuse
 	url = https://github.com/vasi/squashfuse.git
+[submodule "scaleout/src/pyxis"]
+	path = scaleout/src/pyxis
+	url = https://github.com/NVIDIA/pyxis.git
+[submodule "scaleout/src/enroot"]
+	path = scaleout/src/enroot
+	url = https://github.com/NVIDIA/enroot.git

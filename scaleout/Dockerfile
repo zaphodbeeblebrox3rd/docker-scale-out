@@ -222,10 +222,8 @@ RUN [ ${DISABLE_PYXIS} ] || ( \
 	make install >/dev/null )
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
 	[ ${DISABLE_PYXIS} ] || ( \
-	git clone --depth 1 --single-branch -b v0.9.1 https://github.com/NVIDIA/pyxis.git /usr/local/src/pyxis && \
 	cd /usr/local/src/pyxis && \
 	make install >/dev/null && \
-	git clone --recurse-submodules --depth 1 --single-branch --branch v3.5.0 https://github.com/NVIDIA/enroot.git /usr/local/src/enroot && \
 	cd /usr/local/src/enroot && \
 	make $DEBUG sysconfdir=/etc/ -j >/dev/null && \
 	make install >/dev/null && \
