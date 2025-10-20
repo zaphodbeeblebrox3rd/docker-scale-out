@@ -28,3 +28,6 @@
 [submodule "scaleout/src/hwloc"]
 	path = scaleout/src/hwloc
 	url = https://github.com/open-mpi/hwloc.git
+[submodule "scaleout/src/pmix"]
+	path = scaleout/src/pmix
+	url = https://github.com/pmix/pmix.git
