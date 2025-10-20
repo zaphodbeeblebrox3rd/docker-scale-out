@@ -197,7 +197,7 @@ RUN newaliases && \
 	postconf -e "mydestination = login login.localdomain cluster scaleout localhost.localdomain, localhost"
 
 #Install OpenAPI generator wrapper script and force local cache of 7.3.0 by default
-RUN wget -q 'https://raw.githubusercontent.com/OpenAPITools/openapi-generator/master/bin/utils/openapi-generator-cli.sh' -O /usr/local/bin/openapi-generator-cli && \
+RUN ln -nfs /usr/local/src/openapi-generator/bin/utils/openapi-generator-cli.sh /usr/local/bin/openapi-generator-cli && \
 	chmod +x /usr/local/bin/openapi-generator-cli && \
 	env OPENAPI_GENERATOR_VERSION=7.3.0 /usr/local/bin/openapi-generator-cli version
 WORKDIR /usr/local/src/parallel

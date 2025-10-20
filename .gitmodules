@@ -73,3 +73,6 @@
 [submodule "scaleout/src/parallel"]
 	path = scaleout/src/parallel
 	url = https://git.savannah.gnu.org/git/parallel.git
+[submodule "scaleout/src/openapi-generator"]
+	path = scaleout/src/openapi-generator
+	url = https://github.com/OpenAPITools/openapi-generator.git
