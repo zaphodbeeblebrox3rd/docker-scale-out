@@ -237,9 +237,8 @@ RUN make -j >/dev/null && \
 WORKDIR /usr/local/src/clush
 RUN python3 ./setup.py install >/dev/null
 
-RUN git clone --depth 1 --single-branch --branch 1.26.6 https://github.com/urllib3/urllib3.git /usr/local/src/urllib3 && \
-	cd /usr/local/src/urllib3 && \
-	python3 setup.py install >/dev/null
+WORKDIR /usr/local/src/urllib3
+RUN python3 setup.py install >/dev/null
 
 RUN git clone --depth 1 --single-branch --branch v2.1.6 https://github.com/containers/conmon.git /usr/local/src/conmon && \
 	cd /usr/local/src/conmon && \

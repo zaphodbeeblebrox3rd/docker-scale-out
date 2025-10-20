@@ -55,3 +55,6 @@
 [submodule "scaleout/src/clush"]
 	path = scaleout/src/clush
 	url = https://github.com/cea-hpc/clustershell.git
+[submodule "scaleout/src/urllib3"]
+	path = scaleout/src/urllib3
+	url = https://github.com/urllib3/urllib3.git
