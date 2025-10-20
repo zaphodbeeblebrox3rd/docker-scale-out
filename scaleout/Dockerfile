@@ -200,14 +200,11 @@ RUN newaliases && \
 RUN wget -q 'https://raw.githubusercontent.com/OpenAPITools/openapi-generator/master/bin/utils/openapi-generator-cli.sh' -O /usr/local/bin/openapi-generator-cli && \
 	chmod +x /usr/local/bin/openapi-generator-cli && \
 	env OPENAPI_GENERATOR_VERSION=7.3.0 /usr/local/bin/openapi-generator-cli version
+WORKDIR /usr/local/src/parallel
 ARG DISABLE_GNU_PARALLEL
 RUN test $DISABLE_GNU_PARALLEL || ( \
-	wget -q "https://ftpmirror.gnu.org/parallel/parallel-latest.tar.bz2" -O /tmp/parallel.tar.bz2 && \
-	mkdir -p /usr/local/src/parallel && \
-	tar --strip-components=1 -C /usr/local/src/parallel -xf /tmp/parallel.tar.bz2 && \
-	cd /usr/local/src/parallel && \
 	autoreconf -i >/dev/null && \
-	./configure >/dev/null && \
+	./configure --disable-documentation >/dev/null && \
 	make -j >/dev/null && \
 	make install >/dev/null)
 
