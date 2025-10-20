@@ -31,3 +31,6 @@
 [submodule "scaleout/src/pmix"]
 	path = scaleout/src/pmix
 	url = https://github.com/pmix/pmix.git
+[submodule "scaleout/src/slurm"]
+	path = scaleout/src/slurm
+	url = https://github.com/SchedMD/slurm.git

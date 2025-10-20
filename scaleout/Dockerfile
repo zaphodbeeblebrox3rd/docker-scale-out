@@ -108,11 +108,8 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || 
 	./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-tests-examples $ARGS --with-libevent=/usr/local/ --enable-ipv6 >/dev/null && \
 	make -j &>/dev/null && \
 	make install >/dev/null
-RUN git clone --depth 1 --single-branch -b master https://github.com/SchedMD/slurm.git /usr/local/src/slurm && \
-	git config --global --add safe.directory /usr/local/src/slurm
+RUN git config --global --add safe.directory /usr/local/src/slurm
 WORKDIR /usr/local/src/slurm
-RUN git fetch --depth 1 origin ${SLURM_RELEASE} && \
-	git checkout FETCH_HEAD
 RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
 		CONF_ARGS=""; \
 	else \
@@ -417,8 +414,6 @@ RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
 	env SLURM_RELEASE="${SLURM_RELEASE}" bash -c "\
 	if [ -s /usr/local/src/slurm/patch.list ]; then \
 		cd /usr/local/src/slurm/; \
-		git fetch -f origin \${SLURM_RELEASE}:\${SLURM_RELEASE} && \
-		git reset --hard \${SLURM_RELEASE} && \
 		xargs -t -0 -r -n1 git am -3 --empty=keep --ignore-space-change --exclude=NEWS < /usr/local/src/slurm/patch.list && \
 		make -j >/dev/null && make install >/dev/null; \
 	fi"
