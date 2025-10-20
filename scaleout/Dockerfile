@@ -52,7 +52,6 @@ RUN cmake . -Bbuild \
 COPY valgrind.patch /usr/local/src/valgrind.patch
 ARG DISABLE_DEVELOPER
 RUN [ ${DISABLE_DEVELOPER} ] || ( \
-	git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.org/git/valgrind.git /usr/local/src/valgrind/ && \
 	cd /usr/local/src/valgrind/ && \
 	patch -p1 < /usr/local/src/valgrind.patch && \
 	./autogen.sh >/dev/null && \
