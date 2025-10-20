@@ -106,7 +106,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || 
 	unlink .git && \
 	./autogen.pl >/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-tests-examples $ARGS --with-libevent=/usr/local/ --enable-ipv6 >/dev/null && \
-	make -j &>/dev/null && \
+	make -j >/dev/null && \
 	make install >/dev/null
 WORKDIR /usr/local/src/slurm
 RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
