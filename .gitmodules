@@ -7,3 +7,6 @@
 [submodule "scaleout/src/luarocks"]
 	path = scaleout/src/luarocks
 	url = https://github.com/luarocks/luarocks.git
+[submodule "scaleout/src/libjwt"]
+	path = scaleout/src/libjwt
+	url = https://github.com/benmcollins/libjwt.git

@@ -64,7 +64,6 @@ RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
 	make install >/dev/null && \
 	luarocks install lunajson >/dev/null
 RUN pip3 install certifi pip wheel setuptools markdown pydantic dateutils
-RUN git clone --depth 1 --single-branch -b v1.15.2 https://github.com/benmcollins/libjwt.git /usr/local/src/libjwt/
 WORKDIR /usr/local/src/libjwt
 RUN autoreconf --force --install &>/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
