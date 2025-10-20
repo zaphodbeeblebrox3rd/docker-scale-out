@@ -81,7 +81,6 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode"
 	make -j &>/dev/null && \
 	make install &>/dev/null
 RUN test ${DISABLE_DEVELOPER} || ( \
-	git clone --depth 1 --single-branch -b gdb-16.3-release https://github.com/bminor/binutils-gdb.git /usr/local/src/gdb/ && \
 	cd /usr/local/src/gdb/ && \
 	autoreconf -i >/dev/null && \
 	./configure --localstatedir=/var --prefix=/usr/local/ --sysconfdir=/etc/ --with-lzma &>/dev/null && \
