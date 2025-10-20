@@ -1,5 +1,5 @@
 ARG DOCKER_FROM
-FROM ${DOCKER_FROM} as base
+FROM ${DOCKER_FROM} AS base
 ARG SLURM_RELEASE
 COPY profile.sh /etc/profile.d/container.sh
 # ood (open-ondemand user) is hardcoded to user 1000. must ensure uid is not different
