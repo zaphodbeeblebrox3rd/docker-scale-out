@@ -4,3 +4,6 @@
 [submodule "scaleout/src/valgrind"]
 	path = scaleout/src/valgrind
 	url = https://sourceware.org/git/valgrind.git
+[submodule "scaleout/src/luarocks"]
+	path = scaleout/src/luarocks
+	url = https://github.com/luarocks/luarocks.git
