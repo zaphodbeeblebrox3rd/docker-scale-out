@@ -114,6 +114,7 @@ RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
 	else \
 		CONF_ARGS="--enable-memory-leak-debug --enable-developer --disable-optimizations"; \
 	fi; \
+	unlink .git; \
 	./configure --enable-slurmrestd --enable-multiple-slurmd $CONF_ARGS --with-munge=/usr/local/ --prefix=/usr/local \
 		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local --with-hdf5=/usr/local/bin/h5cc \
 		--enable-pam --with-s2n=/usr/local --sysconfdir=/etc/slurm >/dev/null && \
