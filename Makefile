@@ -16,7 +16,14 @@ default: ./docker-compose.yml run
 ./docker-compose.yml: buildout.sh
 	bash buildout.sh > ./docker-compose.yml
 
-build: ./docker-compose.yml
+#based on https://stackoverflow.com/questions/52337010/automatic-initialization-and-update-of-submodules-in-makefile
+.PHONY: git-submodules
+git-submodules:
+	@if git submodule status | egrep -q '^[-+]' ; then \
+	        git submodule update --init --recursive --checkout --depth 1 --recommend-shallow --single-branch 1>&2; \
+	fi
+
+build: ./docker-compose.yml git-submodules
 	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 
 stop:
