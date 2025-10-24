@@ -146,7 +146,7 @@ RUN /usr/sbin/groupadd -r munge && \
 	chown root:root /etc/munge/ -R && \
 	chown -R munge:munge /etc/munge
 WORKDIR /usr/local/src/pdsh
-RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --enable-maintainer-mode"; \
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug"; \
 	sed -e 's#git describe --always#echo scaleout#' -i configure.ac && \
 	autoreconf -i >/dev/null && \
 	./configure $ARGS --disable-dependency-tracking --disable-code-coverage \
