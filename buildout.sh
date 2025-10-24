@@ -28,14 +28,6 @@ unset MAC
 CACHE_DESTROYER="$(find scaleout/patch.d -type f -name '*.patch' -print0 | sort -z | xargs -0 cat | sha256sum | cut -b1-20)"
 
 SLURM_RELEASE="${SLURM_RELEASE:-master}"
-# checkout the correct Slurm branch as submodules will cache the wrong hash
-(
-	pushd scaleout/src/slurm || (echo "src is invalid" && exit 2)
-	if [ "$(git describe --all HEAD 2>/dev/null)" != "${SLURM_RELEASE}" ]; then
-		git fetch origin ${SLURM_RELEASE}
-		git checkout origin/${SLURM_RELEASE} -f
-	fi
-) 1>&2
 
 DISTRO="almalinux:8"
 if ([ -z "$SUBNET" ] || [ "$SUBNET" = "10.11" ]); then

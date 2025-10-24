@@ -2,6 +2,7 @@ BUILD ?= up --build --remove-orphans -d
 DC ?= $(shell docker compose version 2>&1 >/dev/null && echo "docker compose" || echo "docker-compose")
 SUBNET ?= 10.11
 SUBNET6 ?= 2001:db8:1:1::
+SLURM_RELEASE ?= master
 
 ifdef SCALEOUT_DEFAULT_HOST
 	HOST ?= $(SCALEOUT_DEFAULT_HOST)
@@ -23,7 +24,28 @@ git-submodules:
 	        git submodule update --init --recursive --checkout --depth 1 --recommend-shallow --single-branch 1>&2; \
 	fi
 
-build: ./docker-compose.yml git-submodules
+# checkout the correct Slurm branch as submodules will cache the wrong hash
+.PHONY: git-slurm
+git-slurm: git-submodules
+	# always update git to check the hash of the SLURM_RELEASE
+	cd scaleout/src/slurm && git fetch origin $(SLURM_RELEASE) || \
+		git fetch origin -a --tags
+	$(eval SLURM_RELEASE_HASH := $(shell \
+		cd scaleout/src/slurm && ( \
+			git log -1 --format=format:"%H" $(SLURM_RELEASE) || \
+			git log -1 --format=format:"%H" origin/$(SLURM_RELEASE) \
+		) 2>/dev/null ) \
+	)
+	$(eval SLURM_HASH := $(shell cd scaleout/src/slurm && git log -1 --format=format:"%H" HEAD 2>/dev/null))
+
+	test "$(SLURM_RELEASE_HASH)" = "$(SLURM_HASH)" || \
+		( \
+			cd scaleout/src/slurm && \
+			git fetch --tags origin $(SLURM_RELEASE) && \
+			git checkout $(SLURM_RELEASE_HASH) -f \
+		)
+
+build: ./docker-compose.yml git-submodules git-slurm
 	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 
 stop:
