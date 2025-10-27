@@ -345,7 +345,6 @@ RUN sed -e "s/{SUBNET6}/${SUBNET6}/" -e "s/{SUBNET}/${SUBNET}/" \
 
 ARG DOCKER_FROM
 FROM ${DOCKER_FROM} AS scaleout
-ARG CACHE_DESTROYER
 COPY --from=base / /
 
 RUN dd if=/dev/random of=/etc/slurm/slurm.key bs=1024 count=1 && \
@@ -386,7 +385,6 @@ COPY podman-containers /etc/containers/
 RUN systemctl enable slurmdbd slurmctld sackd slurmd slurmrestd postfix slurmd.slice munge && \
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
-RUN touch "/tmp/$CACHE_DESTROYER"
 ARG SLURM_BENCHMARK
 COPY benchmark /root/benchmark
 RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
@@ -396,16 +394,6 @@ RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 COPY get_keycloak_jwt.sh /usr/bin/get_keycloak_jwt.sh
 ARG SUBNET
 RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /usr/bin/get_keycloak_jwt.sh
-COPY patch.d /usr/local/src/slurm/patch.d
-RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
-	sort -z > /usr/local/src/slurm/patch.list && \
-	env SLURM_RELEASE="${SLURM_RELEASE}" bash -c "\
-	if [ -s /usr/local/src/slurm/patch.list ]; then \
-		cd /usr/local/src/slurm/; \
-		git config --global --add safe.directory /usr/local/src/slurm; \
-		xargs -t -0 -r -n1 git am -3 --empty=keep --ignore-space-change --exclude=NEWS < /usr/local/src/slurm/patch.list && \
-		make -j >/dev/null && make install >/dev/null; \
-	fi"
 
 COPY nodelist /etc/nodelist
 

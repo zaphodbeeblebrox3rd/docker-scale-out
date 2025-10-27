@@ -34,18 +34,27 @@ git-slurm: git-submodules
 		cd scaleout/src/slurm && ( \
 			git log -1 --format=format:"%H" $(SLURM_RELEASE) || \
 			git log -1 --format=format:"%H" origin/$(SLURM_RELEASE) \
-		) 2>/dev/null ) \
-	)
-	$(eval SLURM_HASH := $(shell cd scaleout/src/slurm && git log -1 --format=format:"%H" HEAD 2>/dev/null))
-
-	test "$(SLURM_RELEASE_HASH)" = "$(SLURM_HASH)" || \
-		( \
-			cd scaleout/src/slurm && \
+		) 2>/dev/null ))
+	$(eval SLURM_HASH := $(shell \
+		cd scaleout/src/slurm && \
+		git log -1 --format=format:"%H" HEAD 2>/dev/null \
+	))
+	test "$(SLURM_RELEASE_HASH)" = "$(SLURM_HASH)" || ( \
+			cd scaleout/src/slurm; \
 			git fetch --tags origin $(SLURM_RELEASE) && \
-			git checkout $(SLURM_RELEASE_HASH) -f \
+			git checkout $(SLURM_RELEASE_HASH) -fq \
 		)
 
-build: ./docker-compose.yml git-submodules git-slurm
+.PHONY: git-patches
+git-patches: git-slurm $(wildcard patch.d/*.patch)
+	[ -z "$(wildcard ./patch.d/*.patch)" ] || ( \
+		cd scaleout/src/slurm && \
+		readlink -e -- $(wildcard ./patch.d/*.patch) | xargs \
+			git am -3 --empty=keep --ignore-space-change \
+			--exclude=NEWS -- \
+	)
+
+build: ./docker-compose.yml git-submodules git-patches git-slurm
 	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 
 stop:
@@ -66,6 +75,10 @@ clean:
 		$(DC) --progress=quiet rm -f -v -s; \
 		unlink ./docker-compose.yml; \
 	) || true
+	git submodule foreach --recursive git clean -xfd
+	git submodule foreach --recursive git reset --hard >/dev/null
+	#git submodule deinit -f --all >/dev/null
+	git submodule update --init --recursive >/dev/null
 
 uninstall:
 	$(DC) --progress=quiet down --rmi all --remove-orphans -t1 -v

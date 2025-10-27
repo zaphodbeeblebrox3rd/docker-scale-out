@@ -25,8 +25,6 @@ unset MAC
       - /var/lib/journal
 "
 
-CACHE_DESTROYER="$(find scaleout/patch.d -type f -name '*.patch' -print0 | sort -z | xargs -0 cat | sha256sum | cut -b1-20)"
-
 SLURM_RELEASE="${SLURM_RELEASE:-master}"
 
 DISTRO="almalinux:8"
@@ -330,7 +328,6 @@ $HOSTLIST
         SLURM_RELEASE: $SLURM_RELEASE
         SUBNET: "$SUBNET"
         SUBNET6: "$SUBNET6"
-        CACHE_DESTROYER: "$CACHE_DESTROYER"
         DISABLE_GDB_BUILD: "$DISABLE_GDB_BUILD"
         DISABLE_PYXIS: "$DISABLE_PYXIS"
         DISABLE_GNU_PARALLEL: "$DISABLE_GNU_PARALLEL"
