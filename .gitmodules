@@ -72,7 +72,7 @@
 	url = https://github.com/CLIP-HPC/SlurmCommander.git
 [submodule "scaleout/src/parallel"]
 	path = scaleout/src/parallel
-	url = https://git.savannah.gnu.org/git/parallel.git
+	url = https://github.com/mikelolasagasti/parallel.git
 [submodule "scaleout/src/openapi-generator"]
 	path = scaleout/src/openapi-generator
 	url = https://github.com/OpenAPITools/openapi-generator.git
