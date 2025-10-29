@@ -76,6 +76,9 @@ clean:
 		unlink ./docker-compose.yml; \
 	) || true
 	git submodule foreach --recursive git clean -xfd
+	git submodule foreach --recursive 'git rebase --abort || :' &>/dev/null
+	git submodule foreach --recursive 'git am --abort || :' &>/dev/null
+	git submodule foreach --recursive 'git cherry-pick --abort || :' &>/dev/null
 	git submodule foreach --recursive git reset --hard >/dev/null
 	#git submodule deinit -f --all >/dev/null
 	git submodule update --init --recursive >/dev/null
