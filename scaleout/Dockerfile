@@ -41,7 +41,7 @@ ENV CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 RUN git config --global advice.detachedHead false && \
 	git config --global user.email "you@example.com" && \
 	git config --global user.name "scale out"
-COPY src /usr/local/src/
+COPY src/s2n-tls/ /usr/local/src/s2n-tls/
 WORKDIR /usr/local/src/s2n-tls/
 RUN cmake . -Bbuild \
 		-DCMAKE_INSTALL_PREFIX=/usr/local/ \
@@ -49,6 +49,7 @@ RUN cmake . -Bbuild \
 		-DS2N_INSTALL_S2NC_S2ND=1 >/dev/null && \
 	cmake --build build -j $(nproc) >/dev/null && \
 	cmake --install build >/dev/null
+COPY src/valgrind/ /usr/local/src/valgrind/
 COPY valgrind.patch /usr/local/src/valgrind.patch
 ARG DISABLE_DEVELOPER
 RUN [ ${DISABLE_DEVELOPER} ] || ( \
@@ -58,28 +59,33 @@ RUN [ ${DISABLE_DEVELOPER} ] || ( \
 	./configure --prefix=/usr/local/ >/dev/null && \
         make -j >/dev/null && \
 	make install >/dev/null )
+COPY src/luarocks/ /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
 	make -j >/dev/null && \
 	make install >/dev/null && \
 	luarocks install lunajson >/dev/null
 RUN pip3 install certifi pip wheel setuptools markdown pydantic dateutils
+COPY src/libjwt/ /usr/local/src/libjwt/
 WORKDIR /usr/local/src/libjwt
 RUN autoreconf --force --install &>/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
 	make -j &>/dev/null && \
 	make install &>/dev/null
+COPY src/jq/ /usr/local/src/jq/
 WORKDIR /usr/local/src/jq
 RUN autoreconf --force --install &>/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode &>/dev/null && \
 	make -j &>/dev/null && \
 	make install &>/dev/null
+COPY src/munge/ /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
 	autoreconf -i &>/dev/null && \
 	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
 	make -j &>/dev/null && \
 	make install &>/dev/null
+COPY src/gdb/ /usr/local/src/gdb/
 RUN test ${DISABLE_DEVELOPER} || ( \
 	cd /usr/local/src/gdb/ && \
 	autoreconf -i >/dev/null && \
@@ -88,19 +94,23 @@ RUN test ${DISABLE_DEVELOPER} || ( \
 # Link already installed gdb if gdb not built
 RUN test -e /usr/local/bin/gdb || ln -nfs /usr/libexec/gdb /usr/local/bin/gdb
 RUN mkdir -p /etc/slurm/plugstack.conf.d/ /etc/pmix
+COPY src/hdf/ /usr/local/src/hdf/
 WORKDIR /usr/local/src/hdf
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--enable-build-mode=production --disable-dependency-tracking --enable-profiling=no" || ARGS="--enable-build-mode=debug"; \
 	./configure --prefix=/usr/local/ $ARGS &>/dev/null && \
 	make -j &>/dev/null && \
 	make -j install &>/dev/null
+COPY src/libevent/ /usr/local/src/libevent/
 WORKDIR /usr/local/src/libevent
 RUN ./autogen.sh && ./configure --prefix=/usr/local >/dev/null && make -j >/dev/null && make install >/dev/null
+COPY src/hwloc/ /usr/local/src/hwloc/
 WORKDIR /usr/local/src/hwloc
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --disable-picky"; \
 	./autogen.sh >/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/hwloc/ $ARGS >/dev/null && \
 	make -j >/dev/null && \
 	make install >/dev/null
+COPY src/pmix/ /usr/local/src/pmix/
 WORKDIR /usr/local/src/pmix
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || ARGS="--enable-debug"; \
 	unlink .git && \
@@ -108,12 +118,14 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || 
 	./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-tests-examples $ARGS --with-libevent=/usr/local/ --enable-ipv6 >/dev/null && \
 	make -j >/dev/null && \
 	make install >/dev/null
+COPY src/slurm/ /usr/local/src/slurm/
 WORKDIR /usr/local/src/slurm
 RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
 		CONF_ARGS=""; \
 	else \
 		CONF_ARGS="--enable-memory-leak-debug --enable-developer --disable-optimizations"; \
 	fi; \
+	unlink .git; \
 	./configure --enable-slurmrestd --enable-multiple-slurmd $CONF_ARGS --with-munge=/usr/local/ --prefix=/usr/local \
 		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local --with-hdf5=/usr/local/bin/h5cc \
 		--enable-pam --with-s2n=/usr/local --sysconfdir=/etc/slurm >/dev/null && \
@@ -144,8 +156,9 @@ RUN /usr/sbin/groupadd -r munge && \
 	chmod 0400 /etc/munge/munge.key /etc/munge/munge.seed && \
 	chown root:root /etc/munge/ -R && \
 	chown -R munge:munge /etc/munge
+COPY src/pdsh/ /usr/local/src/pdsh/
 WORKDIR /usr/local/src/pdsh
-RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --enable-maintainer-mode"; \
+RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug"; \
 	sed -e 's#git describe --always#echo scaleout#' -i configure.ac && \
 	autoreconf -i >/dev/null && \
 	./configure $ARGS --disable-dependency-tracking --disable-code-coverage \
@@ -154,7 +167,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug -
 		--with-slurm >/dev/null && \
 	make -j >/dev/null && \
 	make install >/dev/null
-WORKDIR /usr/local/src/
+COPY src/openmpi/v4.1.4/ /usr/local/src/openmpi/v4.1.4/
 WORKDIR /usr/local/src/openmpi/v4.1.4/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" || ARGS="--with-devel-headers --enable-debug"; \
 	unlink .git && \
@@ -165,6 +178,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	--with-hwloc=/usr/local/ --enable-mca-no-build=btl-uct >/dev/null && \
 	make -j &>/dev/null && \
 	make install >/dev/null
+COPY src/openmpi/v5.0.0rc9/ /usr/local/src/openmpi/v5.0.0rc9/
 WORKDIR /usr/local/src/openmpi/v5.0.0rc9/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" || ARGS="--with-devel-headers --enable-debug"; \
 	unlink .git && \
@@ -179,6 +193,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	--enable-mca-no-build=btl-uct >/dev/null \
 	&& make -j &>/dev/null && \
 	make install >/dev/null
+COPY src/msmtp/ /usr/local/src/msmtp/
 WORKDIR /usr/local/src/msmtp
 RUN autoreconf -i && ./configure >/dev/null && \
 	make -j >/dev/null && \
@@ -198,9 +213,10 @@ RUN newaliases && \
 	postconf -e "mydestination = login login.localdomain cluster scaleout localhost.localdomain, localhost"
 
 #Install OpenAPI generator wrapper script and force local cache of 7.3.0 by default
-RUN ln -nfs /usr/local/src/openapi-generator/bin/utils/openapi-generator-cli.sh /usr/local/bin/openapi-generator-cli && \
-	chmod +x /usr/local/bin/openapi-generator-cli && \
+COPY src/openapi-generator/bin/utils/openapi-generator-cli.sh /usr/local/bin/openapi-generator-cli
+RUN chmod +x /usr/local/bin/openapi-generator-cli && \
 	env OPENAPI_GENERATOR_VERSION=7.3.0 /usr/local/bin/openapi-generator-cli version
+COPY src/parallel/ /usr/local/src/parallel/
 WORKDIR /usr/local/src/parallel
 ARG DISABLE_GNU_PARALLEL
 RUN test $DISABLE_GNU_PARALLEL || ( \
@@ -210,6 +226,9 @@ RUN test $DISABLE_GNU_PARALLEL || ( \
 	make install >/dev/null)
 
 COPY enroot.conf /tmp/enroot.conf
+COPY src/squashfuse/ /usr/local/src/squashfuse/
+COPY src/pyxis/ /usr/local/src/pyxis/
+COPY src/enroot/ /usr/local/src/enroot/
 ARG DISABLE_PYXIS
 # squashfuse is only used by enroot
 RUN [ ${DISABLE_PYXIS} ] || ( \
@@ -229,25 +248,29 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
 	ln -nfs /usr/local/share/pyxis/pyxis.conf /etc/slurm/plugstack.conf.d/pyxis.conf && \
 	mkdir -m 0755 -p /etc/enroot/ && \
 	mv /tmp/enroot.conf /etc/enroot/enroot.conf )
+COPY src/stressng/ /usr/local/src/stressng/
 WORKDIR /usr/local/src/stressng
 RUN make -j >/dev/null && \
 	make install >/dev/null
+COPY src/clush/ /usr/local/src/clush/
 WORKDIR /usr/local/src/clush
 RUN python3 ./setup.py install >/dev/null
-
+COPY src/urllib3/ /usr/local/src/urllib3/
 WORKDIR /usr/local/src/urllib3
 RUN python3 setup.py install >/dev/null
-
+COPY src/conmon/ /usr/local/src/conmon/
 WORKDIR /usr/local/src/conmon
 RUN export GOCACHE="$(mktemp -d)" && \
 	unlink .git && \
 	make -j && make podman && make install
+COPY src/podman/ /usr/local/src/podman/
 WORKDIR /usr/local/src/podman
 RUN export GOCACHE="$(mktemp -d)" && \
 	unlink .git && \
 	make -j >/dev/null && \
 	make podman >/dev/null && \
 	make install >/dev/null
+COPY src/charliecloud/ /usr/local/src/charliecloud/
 WORKDIR /usr/local/src/charliecloud
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-maintainer-mode" || ARGS="--enable-maintainer-mode"; \
 	./autogen.sh >/dev/null && \
@@ -315,6 +338,7 @@ RUN awk '{if (match($1, /^(passwd|group)/)) {print $1, "slurm", $2, $3} else {pr
 	echo -e "node00\nnode01\nnode02\nnode03\nnode04\nnode05\nnode06\nnode07\nnode08\nnode09" > /etc/PDSH/hosts && \
 	cat /tmp/bashrc >> /etc/bashrc && unlink /tmp/bashrc && \
 	mandb
+COPY src/slurmcommander/ /usr/local/src/slurmcommander/
 WORKDIR /usr/local/src/slurmcommander/
 RUN make build >/dev/null && \
 	make install >/dev/null && \
@@ -344,7 +368,6 @@ RUN sed -e "s/{SUBNET6}/${SUBNET6}/" -e "s/{SUBNET}/${SUBNET}/" \
 
 ARG DOCKER_FROM
 FROM ${DOCKER_FROM} AS scaleout
-ARG CACHE_DESTROYER
 COPY --from=base / /
 
 RUN dd if=/dev/random of=/etc/slurm/slurm.key bs=1024 count=1 && \
@@ -385,7 +408,6 @@ COPY podman-containers /etc/containers/
 RUN systemctl enable slurmdbd slurmctld sackd slurmd slurmrestd postfix slurmd.slice munge && \
 	systemctl disable dnf-makecache.timer && \
 	systemctl mask systemd-udevd.service kdump.service systemd-tmpfiles-clean.timer  nis-domainname.service systemd-hwdb-update.service systemd-udev-trigger.service
-RUN touch "/tmp/$CACHE_DESTROYER"
 ARG SLURM_BENCHMARK
 COPY benchmark /root/benchmark
 RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
@@ -395,16 +417,6 @@ RUN if [ ! -z "${SLURM_BENCHMARK}" ]; then \
 COPY get_keycloak_jwt.sh /usr/bin/get_keycloak_jwt.sh
 ARG SUBNET
 RUN sed -e "s#{SUBNET}#${SUBNET}#g" -i /usr/bin/get_keycloak_jwt.sh
-COPY patch.d /usr/local/src/slurm/patch.d
-RUN find /usr/local/src/slurm/patch.d -type f -name '*.patch' -print0 | \
-	sort -z > /usr/local/src/slurm/patch.list && \
-	env SLURM_RELEASE="${SLURM_RELEASE}" bash -c "\
-	if [ -s /usr/local/src/slurm/patch.list ]; then \
-		cd /usr/local/src/slurm/; \
-		git config --global --add safe.directory /usr/local/src/slurm; \
-		xargs -t -0 -r -n1 git am -3 --empty=keep --ignore-space-change --exclude=NEWS < /usr/local/src/slurm/patch.list && \
-		make -j >/dev/null && make install >/dev/null; \
-	fi"
 
 COPY nodelist /etc/nodelist
 

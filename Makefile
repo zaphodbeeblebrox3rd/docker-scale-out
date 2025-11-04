@@ -2,6 +2,7 @@ BUILD ?= up --build --remove-orphans -d
 DC ?= $(shell docker compose version 2>&1 >/dev/null && echo "docker compose" || echo "docker-compose")
 SUBNET ?= 10.11
 SUBNET6 ?= 2001:db8:1:1::
+SLURM_RELEASE ?= master
 
 ifdef SCALEOUT_DEFAULT_HOST
 	HOST ?= $(SCALEOUT_DEFAULT_HOST)
@@ -16,7 +17,44 @@ default: ./docker-compose.yml run
 ./docker-compose.yml: buildout.sh
 	bash buildout.sh > ./docker-compose.yml
 
-build: ./docker-compose.yml
+#based on https://stackoverflow.com/questions/52337010/automatic-initialization-and-update-of-submodules-in-makefile
+.PHONY: git-submodules
+git-submodules:
+	@if git submodule status | egrep -q '^[-+]' ; then \
+	        git submodule update --init --recursive --checkout --depth 1 --recommend-shallow --single-branch 1>&2; \
+	fi
+
+# checkout the correct Slurm branch as submodules will cache the wrong hash
+.PHONY: git-slurm
+git-slurm: git-submodules
+	# always update git to check the hash of the SLURM_RELEASE
+	cd scaleout/src/slurm && git fetch origin $(SLURM_RELEASE) || \
+		git fetch origin -a --tags
+	$(eval SLURM_RELEASE_HASH := $(shell \
+		cd scaleout/src/slurm && ( \
+			git log -1 --format=format:"%H" $(SLURM_RELEASE) || \
+			git log -1 --format=format:"%H" origin/$(SLURM_RELEASE) \
+		) 2>/dev/null ))
+	$(eval SLURM_HASH := $(shell \
+		cd scaleout/src/slurm && \
+		git log -1 --format=format:"%H" HEAD 2>/dev/null \
+	))
+	test "$(SLURM_RELEASE_HASH)" = "$(SLURM_HASH)" || ( \
+			cd scaleout/src/slurm; \
+			git fetch --tags origin $(SLURM_RELEASE) && \
+			git checkout $(SLURM_RELEASE_HASH) -fq \
+		)
+
+.PHONY: git-patches
+git-patches: git-slurm $(wildcard patch.d/*.patch)
+	[ -z "$(wildcard ./patch.d/*.patch)" ] || ( \
+		cd scaleout/src/slurm && \
+		readlink -e -- $(wildcard ./patch.d/*.patch) | xargs \
+			git am -3 --empty=keep --ignore-space-change \
+			--exclude=NEWS -- \
+	)
+
+build: ./docker-compose.yml git-submodules git-patches git-slurm
 	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
 
 stop:
@@ -37,6 +75,13 @@ clean:
 		$(DC) --progress=quiet rm -f -v -s; \
 		unlink ./docker-compose.yml; \
 	) || true
+	git submodule foreach --recursive git clean -xfd
+	git submodule foreach --recursive 'git rebase --abort || :' &>/dev/null
+	git submodule foreach --recursive 'git am --abort || :' &>/dev/null
+	git submodule foreach --recursive 'git cherry-pick --abort || :' &>/dev/null
+	git submodule foreach --recursive git reset --hard >/dev/null
+	#git submodule deinit -f --all >/dev/null
+	git submodule update --init --recursive >/dev/null
 
 uninstall:
 	$(DC) --progress=quiet down --rmi all --remove-orphans -t1 -v

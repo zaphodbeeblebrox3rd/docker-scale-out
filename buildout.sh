@@ -2,10 +2,15 @@
 unset MAC
 [[ $OSTYPE == 'darwin'* ]] && MAC=1
 
+LOCAL_TIME_MOUNT=
+LOCAL_TIME="$(readlink -e /etc/localtime)"
+[ ! -z "${LOCAL_TIME}" ] &&
+	LOCAL_TIME_MOUNT="      - ${LOCAL_TIME}:/etc/localtime:ro"
+
 #only mount cgroups with v1
 #https://github.com/jepsen-io/jepsen/issues/532#issuecomment-1128067136
 [ ! -f /sys/fs/cgroup/cgroup.controllers ] && SYSDFSMOUNTS="
-      - /etc/localtime:/etc/localtime:ro
+${LOCAL_TIME_MOUNT}
       - /run/
       - /run/lock/
       - /sys/:/sys/:ro
@@ -14,7 +19,7 @@ unset MAC
       - /tmp/
       - /var/lib/journal
 " || SYSDFSMOUNTS="
-      - /etc/localtime:/etc/localtime:ro
+${LOCAL_TIME_MOUNT}
       - /run/
       - /run/lock/
       - /sys/
@@ -25,21 +30,7 @@ unset MAC
       - /var/lib/journal
 "
 
-CACHE_DESTROYER="$(find scaleout/patch.d -type f -name '*.patch' -print0 | sort -z | xargs -0 cat | sha256sum | cut -b1-20)"
-
-# Checkout all submodules if Slurm source is not present
-test -d scaleout/src/slurm/.git -a -d scaleout/src/slurm/src ||
-	git submodule update --init --recursive --checkout --depth 1 --recommend-shallow --single-branch 1>&2
-
 SLURM_RELEASE="${SLURM_RELEASE:-master}"
-# checkout the correct Slurm branch as submodules will cache the wrong hash
-(
-	pushd scaleout/src/slurm || (echo "src is invalid" && exit 2)
-	if [ "$(git describe --all HEAD 2>/dev/null)" != "${SLURM_RELEASE}" ]; then
-		git fetch origin ${SLURM_RELEASE}
-		git checkout origin/${SLURM_RELEASE} -f
-	fi
-) 1>&2
 
 DISTRO="almalinux:8"
 if ([ -z "$SUBNET" ] || [ "$SUBNET" = "10.11" ]); then
@@ -342,7 +333,6 @@ $HOSTLIST
         SLURM_RELEASE: $SLURM_RELEASE
         SUBNET: "$SUBNET"
         SUBNET6: "$SUBNET6"
-        CACHE_DESTROYER: "$CACHE_DESTROYER"
         DISABLE_GDB_BUILD: "$DISABLE_GDB_BUILD"
         DISABLE_PYXIS: "$DISABLE_PYXIS"
         DISABLE_GNU_PARALLEL: "$DISABLE_GNU_PARALLEL"
