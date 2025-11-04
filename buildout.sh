@@ -2,10 +2,15 @@
 unset MAC
 [[ $OSTYPE == 'darwin'* ]] && MAC=1
 
+LOCAL_TIME_MOUNT=
+LOCAL_TIME="$(readlink -e /etc/localtime)"
+[ ! -z "${LOCAL_TIME}" ] &&
+	LOCAL_TIME_MOUNT="      - ${LOCAL_TIME}:/etc/localtime:ro"
+
 #only mount cgroups with v1
 #https://github.com/jepsen-io/jepsen/issues/532#issuecomment-1128067136
 [ ! -f /sys/fs/cgroup/cgroup.controllers ] && SYSDFSMOUNTS="
-      - /etc/localtime:/etc/localtime:ro
+${LOCAL_TIME_MOUNT}
       - /run/
       - /run/lock/
       - /sys/:/sys/:ro
@@ -14,7 +19,7 @@ unset MAC
       - /tmp/
       - /var/lib/journal
 " || SYSDFSMOUNTS="
-      - /etc/localtime:/etc/localtime:ro
+${LOCAL_TIME_MOUNT}
       - /run/
       - /run/lock/
       - /sys/
