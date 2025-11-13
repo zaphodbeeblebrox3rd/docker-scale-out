@@ -71,7 +71,7 @@ clean:
 		$(DC) --progress=quiet down --remove-orphans --rmi local -v -t 1; \
 		$(DC) --progress=quiet kill --remove-orphans -s SIGKILL; \
 		$(DC) --progress=quiet rm -f -v -s; \
-		unlink ./docker-compose.yml; \
+		unlink ./docker-compose.yml &>/dev/null; \
 	) || true
 	git submodule foreach --recursive git clean -xfd
 	git submodule foreach --recursive 'git rebase --abort || :' &>/dev/null
