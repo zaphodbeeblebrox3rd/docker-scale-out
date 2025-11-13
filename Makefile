@@ -11,7 +11,7 @@ else
 endif
 
 .EXPORT_ALL_VARIABLES:
-.PHONY: git-submodules git-slurm
+.PHONY: git-submodules git-slurm clean clean-nodelist uninstall run bash save load nocache cloud benchmark-% test-build
 
 default: ./docker-compose.yml run
 
