@@ -27,8 +27,9 @@ git-submodules: ./docker-compose.yml
 # checkout the correct Slurm branch as submodules will cache the wrong hash
 git-slurm: git-submodules
 	# always update git to check the hash of the SLURM_RELEASE
-	cd scaleout/src/slurm && git fetch --depth 1 origin $(SLURM_RELEASE) || \
-		git fetch origin --depth 1 -a --tags
+	cd scaleout/src/slurm && \
+		(git fetch --depth 1 origin $(SLURM_RELEASE) || \
+			git fetch origin --depth 1 -a --tags)
 	$(eval SLURM_RELEASE_HASH := $(shell \
 		cd scaleout/src/slurm && ( \
 			git log -1 --format=format:"%H" $(SLURM_RELEASE) || \
