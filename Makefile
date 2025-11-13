@@ -39,6 +39,9 @@ git-slurm: git-submodules
 		cd scaleout/src/slurm && \
 		git log -1 --format=format:"%H" HEAD 2>/dev/null \
 	))
+	test ! -z $(SLURM_RELEASE_HASH) || exit 1
+	test ! -z $(SLURM_RELEASE) || exit 1
+	test ! -z $(SLURM_HASH) || exit 1
 	cd scaleout/src/slurm && git checkout $(SLURM_RELEASE_HASH) -fq || ( \
 		git fetch --depth 1 --tags origin $(SLURM_RELEASE) && \
 		git checkout $(SLURM_RELEASE_HASH) -fq \
