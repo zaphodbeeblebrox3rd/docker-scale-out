@@ -39,11 +39,10 @@ git-slurm: git-submodules
 		cd scaleout/src/slurm && \
 		git log -1 --format=format:"%H" HEAD 2>/dev/null \
 	))
-	test "$(SLURM_RELEASE_HASH)" = "$(SLURM_HASH)" || ( \
-			cd scaleout/src/slurm; \
-			git fetch --depth 1 --tags origin $(SLURM_RELEASE) && \
-			git checkout $(SLURM_RELEASE_HASH) -fq \
-		)
+	cd scaleout/src/slurm && git checkout $(SLURM_RELEASE_HASH) -fq || ( \
+		git fetch --depth 1 --tags origin $(SLURM_RELEASE) && \
+		git checkout $(SLURM_RELEASE_HASH) -fq \
+	)
 
 git-patches: git-slurm $(wildcard patch.d/*.patch)
 	[ -z "$(wildcard ./patch.d/*.patch)" ] || ( \
