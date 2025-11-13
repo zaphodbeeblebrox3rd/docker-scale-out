@@ -11,6 +11,7 @@ else
 endif
 
 .EXPORT_ALL_VARIABLES:
+.PHONY: git-submodules git-slurm
 
 default: ./docker-compose.yml run
 
@@ -18,14 +19,12 @@ default: ./docker-compose.yml run
 	bash buildout.sh > ./docker-compose.yml
 
 #based on https://stackoverflow.com/questions/52337010/automatic-initialization-and-update-of-submodules-in-makefile
-.PHONY: git-submodules
-git-submodules:
+git-submodules: ./docker-compose.yml
 	@if git submodule status | egrep -q '^[-+]' ; then \
 	        git submodule update --init --recursive --checkout --depth 1 --recommend-shallow --single-branch 1>&2; \
 	fi
 
 # checkout the correct Slurm branch as submodules will cache the wrong hash
-.PHONY: git-slurm
 git-slurm: git-submodules
 	# always update git to check the hash of the SLURM_RELEASE
 	cd scaleout/src/slurm && git fetch origin $(SLURM_RELEASE) || \
@@ -45,7 +44,6 @@ git-slurm: git-submodules
 			git checkout $(SLURM_RELEASE_HASH) -fq \
 		)
 
-.PHONY: git-patches
 git-patches: git-slurm $(wildcard patch.d/*.patch)
 	[ -z "$(wildcard ./patch.d/*.patch)" ] || ( \
 		cd scaleout/src/slurm && \
