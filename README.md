@@ -192,6 +192,13 @@ To specify an explicit version of Slurm to be compiled and installed:
 Make sure to call `make clean` after to invalidate all the caches with the
 prior release.
 
+## To checkout source repository
+
+```bash
+git clone --recurse-submodules --shallow-submodules -b production --depth 1 https://gitlab.com/SchedMD/training/docker-scale-out.git
+cd docker-scale-out
+```
+
 ## To build images
 
 ```
