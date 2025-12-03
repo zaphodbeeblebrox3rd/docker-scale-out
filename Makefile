@@ -11,6 +11,7 @@ else
 endif
 
 .EXPORT_ALL_VARIABLES:
+.PHONY: git-submodules git-slurm clean clean-nodelist uninstall run bash save load nocache cloud benchmark-% test-build
 
 default: ./docker-compose.yml run
 
@@ -18,34 +19,37 @@ default: ./docker-compose.yml run
 	bash buildout.sh > ./docker-compose.yml
 
 #based on https://stackoverflow.com/questions/52337010/automatic-initialization-and-update-of-submodules-in-makefile
-.PHONY: git-submodules
-git-submodules:
+git-submodules: ./docker-compose.yml
 	@if git submodule status | egrep -q '^[-+]' ; then \
 	        git submodule update --init --recursive --checkout --depth 1 --recommend-shallow --single-branch 1>&2; \
 	fi
 
 # checkout the correct Slurm branch as submodules will cache the wrong hash
-.PHONY: git-slurm
 git-slurm: git-submodules
 	# always update git to check the hash of the SLURM_RELEASE
-	cd scaleout/src/slurm && git fetch origin $(SLURM_RELEASE) || \
-		git fetch origin -a --tags
 	$(eval SLURM_RELEASE_HASH := $(shell \
 		cd scaleout/src/slurm && ( \
-			git log -1 --format=format:"%H" $(SLURM_RELEASE) || \
-			git log -1 --format=format:"%H" origin/$(SLURM_RELEASE) \
+			(git fetch --depth 1 origin $(SLURM_RELEASE) && \
+				git log -1 --format=format:"%H" $(SLURM_RELEASE) \
+			) || (git fetch origin --depth 1 -a --tags && \
+				git log -1 --format=format:"%H" origin/$(SLURM_RELEASE) \
+			) || (git fetch origin -a --tags && (\
+				git log -1 --format=format:"%H" $(SLURM_RELEASE) || \
+				git log -1 --format=format:"%H" origin/$(SLURM_RELEASE)) \
+			) \
 		) 2>/dev/null ))
 	$(eval SLURM_HASH := $(shell \
 		cd scaleout/src/slurm && \
 		git log -1 --format=format:"%H" HEAD 2>/dev/null \
 	))
-	test "$(SLURM_RELEASE_HASH)" = "$(SLURM_HASH)" || ( \
-			cd scaleout/src/slurm; \
-			git fetch --tags origin $(SLURM_RELEASE) && \
-			git checkout $(SLURM_RELEASE_HASH) -fq \
-		)
+	test ! -z $(SLURM_RELEASE_HASH) || exit 1
+	test ! -z $(SLURM_RELEASE) || exit 1
+	test ! -z $(SLURM_HASH) || exit 1
+	cd scaleout/src/slurm && git checkout $(SLURM_RELEASE_HASH) -fq || ( \
+		git fetch --depth 1 --tags origin $(SLURM_RELEASE) && \
+		git checkout $(SLURM_RELEASE_HASH) -fq \
+	)
 
-.PHONY: git-patches
 git-patches: git-slurm $(wildcard patch.d/*.patch)
 	[ -z "$(wildcard ./patch.d/*.patch)" ] || ( \
 		cd scaleout/src/slurm && \
@@ -73,7 +77,7 @@ clean:
 		$(DC) --progress=quiet down --remove-orphans --rmi local -v -t 1; \
 		$(DC) --progress=quiet kill --remove-orphans -s SIGKILL; \
 		$(DC) --progress=quiet rm -f -v -s; \
-		unlink ./docker-compose.yml; \
+		unlink ./docker-compose.yml &>/dev/null; \
 	) || true
 	git submodule foreach --recursive git clean -xfd
 	git submodule foreach --recursive 'git rebase --abort || :' &>/dev/null
