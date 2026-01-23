@@ -18,7 +18,7 @@
 	url = https://github.com/dun/munge.git
 [submodule "scaleout/src/gdb"]
 	path = scaleout/src/gdb
-	url = https://github.com/bminor/binutils-gdb.git
+	url = https://sourceware.org/git/binutils-gdb.git
 [submodule "scaleout/src/hdf"]
 	path = scaleout/src/hdf
 	url = https://github.com/HDFGroup/hdf5.git
