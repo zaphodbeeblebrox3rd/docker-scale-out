@@ -66,7 +66,7 @@
 	url = https://github.com/containers/podman.git
 [submodule "scaleout/src/charliecloud"]
 	path = scaleout/src/charliecloud
-	url = https://gitlab.com/charliecloud/main.git
+	url = https://gitlab.com/charliecloud/charliecloud.git
 [submodule "scaleout/src/slurmcommander"]
 	path = scaleout/src/slurmcommander
 	url = https://github.com/CLIP-HPC/SlurmCommander.git
