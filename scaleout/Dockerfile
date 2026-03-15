@@ -53,7 +53,7 @@ RUN git clone --depth 1 --single-branch -b VALGRIND_3_24_0 https://sourceware.or
 COPY valgrind.patch /usr/local/src/valgrind/
 WORKDIR /usr/local/src/valgrind/
 RUN git apply valgrind.patch && ./autogen.sh && ./configure --prefix=/usr/local/ && \
-        make -j && sudo make install
+        make -j && make install
 RUN git clone --depth 1 --single-branch -b v3.9.2 https://github.com/luarocks/luarocks.git /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ && make -j && make install

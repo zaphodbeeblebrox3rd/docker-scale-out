@@ -1,7 +1,7 @@
 HOST ?= login
 BUILD ?= up --build --remove-orphans -d
-DC ?= $(shell docker compose version 2>&1 >/dev/null && echo "docker compose" || echo "docker-compose")
-IMAGES := $(shell $(DC) config | awk '{if ($$1 == "image:") print $$2;}' | sort | uniq)
+DC ?= $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
+IMAGES = $(shell test -f ./docker-compose.yml && $(DC) config 2>/dev/null | awk '{if ($$1 == "image:") print $$2;}' | sort | uniq)
 SUBNET ?= 10.11
 SUBNET6 ?= 2001:db8:1:1::
 
@@ -13,10 +13,10 @@ default: ./docker-compose.yml run
 	bash buildout.sh > ./docker-compose.yml
 
 build: ./docker-compose.yml
-	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never --progress=plain $(BUILD)
+	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never $(BUILD)
 
 stop:
-	$(DC) down
+	test -f ./docker-compose.yml && $(DC) down || true
 
 set_nocache:
 	$(eval BUILD := build --no-cache)
@@ -31,8 +31,7 @@ clean:
 	[ -f cloud_socket ] && unlink cloud_socket || true
 
 uninstall:
-	$(DC) down --rmi all --remove-orphans -t1 -v
-	$(DC) rm -v
+	test -f ./docker-compose.yml && ($(DC) down --rmi all --remove-orphans -t1 -v; $(DC) rm -v) || true
 
 run: ./docker-compose.yml
 	$(DC) up --remove-orphans -d

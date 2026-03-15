@@ -1,4 +1,4 @@
-FROM alpine
+FROM docker.io/library/alpine:latest
 RUN mkdir -p /run/nginx/ /var/www/html/validate /var/www/html/auth
 RUN mkdir -p /var/www/html/slurm
 RUN apk update

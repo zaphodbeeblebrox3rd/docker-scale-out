@@ -28,7 +28,7 @@ unset MAC
 CACHE_DESTROYER="$(find scaleout/patch.d -type f -name '*.patch' -print0 | sort -z | xargs -0 cat | sha256sum | cut -b1-20)"
 
 SLURM_RELEASE="${SLURM_RELEASE:-master}"
-DISTRO="almalinux:8"
+DISTRO="docker.io/library/almalinux:8"
 if [ -z "$SUBNET" -o "$SUBNET" = "10.11" ]
 then
 	ES_PORTS="
@@ -176,10 +176,17 @@ else
 	HOSTLIST="${HOSTLIST}      - \"mgmtnode2:${SUBNET6}1:4\""$'\n'
 fi
 
+LOG_DRIVER="local"
+case "$(docker --version 2>/dev/null)" in
+	*podman*|*Podman*)
+		LOG_DRIVER="journald"
+		;;
+esac
+
 LOGGING="
     tty: true
     logging:
-      driver: local
+      driver: ${LOG_DRIVER}
     cap_add:
       - SYS_PTRACE
       - SYS_ADMIN

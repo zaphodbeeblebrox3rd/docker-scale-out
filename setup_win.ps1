@@ -455,64 +455,6 @@ function Ensure-DockerRunning {
     }
 }
 
-# Function to check and handle Docker login
-function Test-DockerLogin {
-    Write-Host "Checking Docker login status..."
-    
-    # First check if we're already logged in
-    try {
-        $loginStatus = Invoke-Expression "docker info" | Select-String "Username"
-        if ($loginStatus) {
-            Write-Host "Already logged in to Docker Hub" -ForegroundColor Green
-            return $true
-        }
-    }
-    catch {
-        Write-Debug "Docker info check failed: $($_.Exception.Message)"
-    }
-    
-    # If not logged in, prompt for credentials
-    Write-Host "Docker login required. Please enter your Docker Hub credentials:"
-    
-    # Prompt for username
-    $dockerUsername = Read-Host "Docker Hub Username"
-    if ([string]::IsNullOrEmpty($dockerUsername)) {
-        Write-Error "Error: Username cannot be empty"
-        return $false
-    }
-    
-    # Prompt for password (hidden)
-    $dockerPassword = Read-Host "Docker Hub Password" -AsSecureString
-    $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($dockerPassword)
-    $dockerPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-    
-    if ([string]::IsNullOrEmpty($dockerPassword)) {
-        Write-Error "Error: Password cannot be empty"
-        return $false
-    }
-    
-    # Attempt to login
-    Write-Host "Logging in to Docker Hub..."
-    try {
-        $loginOutput = $dockerPassword | Invoke-Expression "docker login -u $dockerUsername --password-stdin" | Out-String
-        Write-Debug "Docker login output: $loginOutput"
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Error: Docker login failed"
-            Write-Error "Login output: $loginOutput"
-            return $false
-        }
-        
-        Write-Host "Docker login successful" -ForegroundColor Green
-        return $true
-    }
-    catch {
-        Write-Error "Error: Docker login failed"
-        Write-Error "Error details: $($_.Exception.Message)"
-        return $false
-    }
-}
-
 # Function to start Docker Desktop
 function Start-DockerDesktop {
     Write-Debug "Attempting to start Docker Desktop..."
@@ -669,16 +611,7 @@ function Start-Build {
                 Write-Error "Network error detected. Please check your internet connection and Docker network settings."
             }
             elseif ($errorContent -match "authentication required" -or $errorContent -match "unauthorized") {
-                Write-Host "Docker login required for this operation..." -ForegroundColor Yellow
-                if (Test-DockerLogin) {
-                    Write-Host "Retrying build after successful login..." -ForegroundColor Yellow
-                    $process = Start-Process -FilePath "make" -ArgumentList "-f", "Makefile.win", "build" -NoNewWindow -Wait -PassThru -RedirectStandardOutput "make_output.txt" -RedirectStandardError "make_error.txt"
-                    if ($process.ExitCode -ne 0) {
-                        throw "Build failed even after Docker login"
-                    }
-                } else {
-                    throw "Docker login failed"
-                }
+                throw "Registry authorization error encountered. User setup does not perform docker login; ensure required images are publicly accessible and reachable."
             }
             
             throw "Build command failed with exit code $($process.ExitCode)"

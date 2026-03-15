@@ -341,6 +341,19 @@ install_packages() {
     done
 }
 
+# Configure container short-name resolution for Podman-backed docker wrappers
+configure_container_registries() {
+    local registries_dir="/etc/containers/registries.conf.d"
+    local registries_file="${registries_dir}/99-scaleout-dockerio.conf"
+
+    mkdir -p "$registries_dir"
+    cat > "$registries_file" << EOF
+unqualified-search-registries = ["docker.io"]
+EOF
+
+    echo "Configured container registry short-name resolution in $registries_file"
+}
+
 # Function to configure sysctl
 configure_sysctl() {
     cat > /etc/sysctl.d/99-slurm-docker.conf << EOF
@@ -492,6 +505,10 @@ verify_root_access
 # Install required packages
 echo "Installing required packages..."
 install_packages
+
+# Configure container registries for environments where docker maps to Podman
+echo "Configuring container registry defaults..."
+configure_container_registries
 
 # Configure sysctl
 echo "Configuring sysctl settings..."

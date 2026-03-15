@@ -1,26 +1,18 @@
-# slurm-docker-scaleout
-Docker compose cluster for testing Slurm
+# Slurm docker-scale-out
+Docker compose cluster for Slurm training
 
-> All packages and prerequisite configuration for Debian or RHEL-family Linux distros can be performed by running setup_1.sh.  It might even work on Suse or Arch although further testing is needed.  After rebooting, run setup_2.sh to finish the build and start the containers.
+> All packages and prerequisite configuration for Debian or RHEL-family Linux distros can be performed by running setup_1.sh.  It might even work on Suse or Arch although further testing is needed.  After rebooting, run setup_2.sh to finish the image build, then run make to start the containers.
 
 >This is not for production use, it is not to be installed on a production server, and it should be on a dedicated VM or test machine to avoid conflicts with other services.
-
 { .is-info }
 
-## Automated Setup on Linux
-Run the setup.sh script.
-```
-chmod +x setup_1.sh
-chmod +x setup_2.sh
-./setup_1.sh
-```
+## Requirements
+- Root access (for running setup scripts and Docker)
+- **Memory:** Minimum 12 GB RAM (16 GB or more recommended for a full stack with Elasticsearch, Slurm, and all services)
+- **Disk:** At least 30 GB free space for container images, build artifacts, and volumes
+- **CPU architecture:** x86_64 (amd64) or arm64 (aarch64)
 
-## Automated Setup on Windows
-Run the setup_win powershell script.
-```
-./setup_win.ps1
-```
-## Basic Architecture
+## Basic Architecture of the cluster
 
 Maria Database Node:
   * db
@@ -70,106 +62,48 @@ Keycloak
   * User: admin
   * Password: password
 
+## Quick Start
+This is built to set up quickly and to use easily afterwards
 
+### Initial Setup
+- Run `setup_1.sh`
+- Reboot
+- Run `setup_2.sh`
 
-
-## Prerequisites
-This section is for reference only if the setup.sh script ran to completion successfully.
-  * docker (25.x.x+ with cgroupsv2 or 24.x.x with cgroupsv1)
-    * IPv6 must be configured in docker: https://docs.docker.com/config/daemon/ipv6/
-  * docker-compose-plugin v2.18.1+
-  * ssh (client)
-  * jq
-  * python3
-    * python3-daemon
-
-## Manual Changes (for reference only)
-These sections are for reference only if the setup script for your OS ran to completion successfully.
-
-### Changes needed in sysctl.conf:
-
-
-Run this codeblock for the necessary network reconfiguration.
-
+### Run the cluster
 ```
-net.ipv4.tcp_max_syn_backlog=4096
-net.core.netdev_max_backlog=1000
-net.core.somaxconn=15000
-
-# Force gc to clean-up quickly
-net.ipv4.neigh.default.gc_interval = 3600
-
-# Set ARP cache entry timeout
-net.ipv4.neigh.default.gc_stale_time = 3600
-
-# Setup DNS threshold for arp
-net.ipv4.neigh.default.gc_thresh3 = 8096
-net.ipv4.neigh.default.gc_thresh2 = 4048
-net.ipv4.neigh.default.gc_thresh1 = 1024
-
-# Increase map count for elasticsearch
-vm.max_map_count=262144
-
-# Avoid running out of file descriptors
-fs.file-max=10000000
-fs.inotify.max_user_instances=65535
-fs.inotify.max_user_watches=1048576
-
-#Request kernel max number of cgroups
-fs.inotify.max_user_instances=65535
+make
 ```
 
-### Manual Docker configuration required with cgroupsv2 for reference
-
-Make sure the host machine is running CgroupV2 and not hybrid mode:
-	https://slurm.schedmd.com/faq.html#cgroupv2
-
-Add these settings to the docker configuration: /etc/docker/daemon.json
+### Open a shell to a login node or other container
 ```
-{
-  "exec-opts": [
-    "native.cgroupdriver=systemd"
-  ],
-  "features": {
-    "buildkit": true
-  },
-  "experimental": true,
-  "cgroup-parent": "docker.slice",
-  "default-cgroupns-mode": "host",
-  "storage-driver": "overlay2"
-}
+make bash
+make HOST=login bash
 ```
 
-Configure systemd to allow docker to run in it's own slice to avoid systemd
-conflicting with it:
-
-/etc/systemd/system/docker.slice:
+## Automated Setup on Windows
+Linux is recommended but it is possible to use Windows. Run the setup_win powershell script.
 ```
-[Unit]
-Description=docker slice
-Before=slices.target
-[Slice]
-CPUAccounting=true
-MemoryAccounting=true
-Delegate=yes
+./setup_win.ps1
 ```
 
-/usr/lib/systemd/system/docker.service.d/local.conf:
+## Managing the cluster
+Beyond just starting the cluster, you may want to stop it or rebuild it from time to time while tinkering with it.
+
+### Stop the cluster
 ```
-[Service]
-LimitNOFILE=infinity
-LimitNPROC=infinity
-LimitCORE=infinity
-TasksMax=infinity
-Delegate=yes
+make stop
 ```
 
-Activate the changes:
+### Reverse all runtime changes
 ```
-systemctl daemon-reload
-systemctl restart docker.slice docker
+make clean
 ```
 
+### Remove all images
+```
+make uninstall
+```
 
 
 ## Custom Nodes
@@ -208,58 +142,6 @@ prior release.
 ```
 git submodule update --init --force --remote --recursive
 make build
-```
-
-## To run:
-
-```
-make
-```
-
-## To build and run in Cloud mode:
-
-```
-make clean
-make cloud
-```
-
-Note: cloud mode will run in the foreground.
-
-## To build without caching:
-
-```
-make nocache
-```
-
-## To stop:
-
-```
-make stop
-```
-
-## To reverse all changes:
-
-```
-make clean
-```
-
-## To remove all images:
-
-```
-make uninstall
-```
-
-## To control:
-
-```
-make bash
-make HOST=node1 bash
-```
-
-## To login via ssh
-```
-ssh-keygen -f "/home/$(whoami)/.ssh/known_hosts" -R "10.11.1.5" 2>/dev/null
-ssh -o StrictHostKeyChecking=no -l fred 10.11.1.5 -X #use 'password'
 ```
 
 ## Federation Mode
@@ -320,6 +202,8 @@ make clean
 docker network prune -f
 sudo systemctl restart docker
 ```
+
+If you see `unauthorized` or `authentication required` during image pulls, treat that as an environment or registry-access issue. The user setup flow does not perform `docker login` and expects public image access.
 
 ## To save all images to ./scaleout.tar
 

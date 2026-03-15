@@ -1,4 +1,4 @@
-FROM treydock/ood:latest
+FROM docker.io/treydock/ood:latest
 COPY ood_portal.yml /etc/ood/config/ood_portal.yml
 COPY scaleout.yaml /etc/ood/config/clusters.d/scaleout.yml
 RUN /opt/ood/ood-portal-generator/sbin/update_ood_portal

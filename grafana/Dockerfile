@@ -1,4 +1,4 @@
-FROM grafana/grafana:latest
+FROM docker.io/grafana/grafana:latest
 USER root:root
 RUN apk add wget
 COPY grafana.ini /etc/grafana/grafana.ini
