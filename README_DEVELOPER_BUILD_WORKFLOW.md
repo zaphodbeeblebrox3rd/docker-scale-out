@@ -117,7 +117,7 @@ Behavior:
 - Requires git binary.
 - Requires script to run from repo root where `.git` exists.
 - Executes:
-  - `git submodule update --init --force --remote --recursive`
+  - `git submodule update --init --force --recursive --depth 1 --recommend-shallow`
 
 Why it matters:
 

@@ -13,7 +13,7 @@ sed -i /etc/slurm/slurm.conf \
 unlink /etc/slurm/acct_gather.conf
 unlink /etc/slurm/plugstack.conf
 
-cat <<EOF >> /etc/slurm/slurm.conf
+cat <<EOF >>/etc/slurm/slurm.conf
 SlurmctldParameters=enable_configless,idle_on_node_suspend,enable_rpc_queue,CONMGR_THREADS=128,CONMGR_MAX_CONNECTIONS=4096,CONMGR_READ_TIMEOUT=60,CONMGR_WRITE_TIMEOUT=60,CONMGR_CONNECT_TIMEOUT=60
 MaxArraySize=1000000
 MaxJobCount=1000000
