@@ -28,7 +28,7 @@ RUN dnf -y install 'dnf-command(config-manager)' && \
 # Install Slurm and dependencies
 RUN git clone --depth 1 --single-branch -b munge-0.5.18 https://github.com/dun/munge.git /usr/local/src/munge/ && \
     cd /usr/local/src/munge/ && \
-    autoreconf -i && ./configure --localstatedir=/var --with-runstatedir=/var/run --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
+    autoreconf -i && ./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
     make -j$(nproc) >/dev/null && make install >/dev/null
 
 RUN mkdir -p /etc/slurm /etc/pmix && \
@@ -71,6 +71,7 @@ RUN /usr/sbin/groupadd -r munge && \
     /usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
     mkdir -m 0700 -p /etc/munge/ && \
     mkdir -p -m 0700 /var/log/munge && \
+    mkdir -p -m 0755 /var/run/munge && \
     chown munge:munge -R /var/log/munge /var/run/munge/ && \
     dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key && \
     touch /etc/munge/munge.seed && \

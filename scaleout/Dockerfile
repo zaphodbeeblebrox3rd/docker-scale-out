@@ -82,7 +82,7 @@ COPY src/munge/ /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
 	autoreconf -i &>/dev/null && \
-	./configure $ARGS --localstatedir=/var --with-runstatedir=/var/run --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
+	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
 	make -j$(nproc) &>/dev/null && \
 	make install &>/dev/null
 COPY src/gdb/ /usr/local/src/gdb/
@@ -149,6 +149,7 @@ RUN /usr/sbin/groupadd -r munge && \
 	/usr/sbin/useradd -c "MUNGE authentication service" -d "/usr/local/etc/munge" -g munge -s /bin/false -r munge && \
 	mkdir -m 0700 -p /etc/munge/ && \
 	mkdir -p -m 0700 /var/log/munge && \
+	mkdir -p -m 0755 /var/run/munge && \
 	chown munge:munge -R /var/log/munge /var/run/munge/ && \
 	dd if=/dev/urandom bs=1 count=1024 >/etc/munge/munge.key && \
 	touch /etc/munge/munge.seed && \
