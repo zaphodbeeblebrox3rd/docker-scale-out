@@ -1,4 +1,4 @@
-FROM docker.io/library/influxdb:2.0
+FROM docker.io/library/influxdb:2.10
 USER root:root
 
 COPY setup.sh /setup.sh

@@ -12,7 +12,7 @@
 	url = https://github.com/benmcollins/libjwt.git
 [submodule "scaleout/src/jq"]
 	path = scaleout/src/jq
-	url = https://github.com/stedolan/jq.git
+	url = https://github.com/jqlang/jq.git
 [submodule "scaleout/src/munge"]
 	path = scaleout/src/munge
 	url = https://github.com/dun/munge.git
@@ -30,7 +30,7 @@
 	url = https://github.com/open-mpi/hwloc.git
 [submodule "scaleout/src/pmix"]
 	path = scaleout/src/pmix
-	url = https://github.com/pmix/pmix.git
+	url = https://github.com/openpmix/openpmix.git
 [submodule "scaleout/src/slurm"]
 	path = scaleout/src/slurm
 	url = https://github.com/SchedMD/slurm.git
@@ -76,9 +76,9 @@
 [submodule "scaleout/src/openapi-generator"]
 	path = scaleout/src/openapi-generator
 	url = https://github.com/OpenAPITools/openapi-generator.git
-[submodule "scaleout/src/openmpi/v4.1.4"]
-	path = scaleout/src/openmpi/v4.1.4
+[submodule "scaleout/src/openmpi/v4.1.8"]
+	path = scaleout/src/openmpi/v4.1.8
 	url = https://github.com/open-mpi/ompi.git
-[submodule "scaleout/src/openmpi/v5.0.0rc9"]
-	path = scaleout/src/openmpi/v5.0.0rc9
+[submodule "scaleout/src/openmpi/v5.0.11"]
+	path = scaleout/src/openmpi/v5.0.11
 	url = https://github.com/open-mpi/ompi.git

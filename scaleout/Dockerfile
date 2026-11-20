@@ -167,23 +167,23 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug";
 		--with-slurm >/dev/null && \
 	make -j >/dev/null && \
 	make install >/dev/null
-COPY src/openmpi/v4.1.4/ /usr/local/src/openmpi/v4.1.4/
-WORKDIR /usr/local/src/openmpi/v4.1.4/
+COPY src/openmpi/v4.1.8/ /usr/local/src/openmpi/v4.1.8/
+WORKDIR /usr/local/src/openmpi/v4.1.8/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" || ARGS="--with-devel-headers --enable-debug"; \
 	unlink .git && \
 	./autogen.pl && \
-	./configure --prefix=/usr/local/openmpi/4.1.4 --with-pmix=/usr/local \
+	./configure --prefix=/usr/local/openmpi/4.1.8 --with-pmix=/usr/local \
 	--with-pmix-libdir=/usr/local/lib --with-pmi=/usr/local --with-slurm \
 	$ARGS --without-cma --with-libevent=/usr/local \
 	--with-hwloc=/usr/local/ --enable-mca-no-build=btl-uct >/dev/null && \
 	make -j &>/dev/null && \
 	make install >/dev/null
-COPY src/openmpi/v5.0.0rc9/ /usr/local/src/openmpi/v5.0.0rc9/
-WORKDIR /usr/local/src/openmpi/v5.0.0rc9/
+COPY src/openmpi/v5.0.11/ /usr/local/src/openmpi/v5.0.11/
+WORKDIR /usr/local/src/openmpi/v5.0.11/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" || ARGS="--with-devel-headers --enable-debug"; \
 	unlink .git && \
 	./autogen.pl && \
-	./configure --prefix=/usr/local/openmpi/5.0.0rc9 \
+	./configure --prefix=/usr/local/openmpi/5.0.11 \
 	--with-pmix=/usr/local \
 	--with-slurm \
 	$ARGS \

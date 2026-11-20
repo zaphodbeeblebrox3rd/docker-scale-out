@@ -26,7 +26,7 @@ RUN dnf -y install 'dnf-command(config-manager)' && \
     bc emacs nano dos2unix
 
 # Install Slurm and dependencies
-RUN git clone --depth 1 --single-branch -b munge-0.5.13 https://github.com/dun/munge.git /usr/local/src/munge/ && \
+RUN git clone --depth 1 --single-branch -b munge-0.5.18 https://github.com/dun/munge.git /usr/local/src/munge/ && \
     cd /usr/local/src/munge/ && \
     autoreconf -i && ./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
     make -j >/dev/null && make install >/dev/null

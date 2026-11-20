@@ -251,7 +251,7 @@ function Install-RequiredPackages {
             
             # Install jq manually
             Write-Debug "Installing jq..."
-            $jqUrl = "https://github.com/stedolan/jq/releases/download/jq-1.6/jq-win64.exe"
+            $jqUrl = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-windows-amd64.exe"
             $jqPath = "$env:ProgramFiles\jq\jq.exe"
             $jqDir = "$env:ProgramFiles\jq"
             
