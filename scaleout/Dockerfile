@@ -57,12 +57,12 @@ RUN [ ${DISABLE_DEVELOPER} ] || ( \
 	patch -p1 < /usr/local/src/valgrind.patch && \
 	./autogen.sh >/dev/null && \
 	./configure --prefix=/usr/local/ >/dev/null && \
-        make -j >/dev/null && \
+        make -j$(nproc) >/dev/null && \
 	make install >/dev/null )
 COPY src/luarocks/ /usr/local/src/luarocks/
 WORKDIR /usr/local/src/luarocks/
 RUN ./configure --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make install >/dev/null && \
 	luarocks install lunajson >/dev/null
 RUN pip3 install certifi pip wheel setuptools markdown pydantic dateutils
@@ -70,27 +70,27 @@ COPY src/libjwt/ /usr/local/src/libjwt/
 WORKDIR /usr/local/src/libjwt
 RUN autoreconf --force --install &>/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
-	make -j &>/dev/null && \
+	make -j$(nproc) &>/dev/null && \
 	make install &>/dev/null
 COPY src/jq/ /usr/local/src/jq/
 WORKDIR /usr/local/src/jq
 RUN autoreconf --force --install &>/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/ --disable-valgrind --disable-maintainer-mode &>/dev/null && \
-	make -j &>/dev/null && \
+	make -j$(nproc) &>/dev/null && \
 	make install &>/dev/null
 COPY src/munge/ /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
 	autoreconf -i &>/dev/null && \
 	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
-	make -j &>/dev/null && \
+	make -j$(nproc) &>/dev/null && \
 	make install &>/dev/null
 COPY src/gdb/ /usr/local/src/gdb/
 RUN test ${DISABLE_DEVELOPER} || ( \
 	cd /usr/local/src/gdb/ && \
 	autoreconf -i >/dev/null && \
 	./configure --localstatedir=/var --prefix=/usr/local/ --sysconfdir=/etc/ --with-lzma &>/dev/null && \
-	make -j &>/dev/null && make install &>/dev/null )
+	make -j$(nproc) &>/dev/null && make install &>/dev/null )
 # Link already installed gdb if gdb not built
 RUN test -e /usr/local/bin/gdb || ln -nfs /usr/libexec/gdb /usr/local/bin/gdb
 RUN mkdir -p /etc/slurm/plugstack.conf.d/ /etc/pmix
@@ -98,17 +98,17 @@ COPY src/hdf/ /usr/local/src/hdf/
 WORKDIR /usr/local/src/hdf
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--enable-build-mode=production --disable-dependency-tracking --enable-profiling=no" || ARGS="--enable-build-mode=debug"; \
 	./configure --prefix=/usr/local/ $ARGS &>/dev/null && \
-	make -j &>/dev/null && \
-	make -j install &>/dev/null
+	make -j$(nproc) &>/dev/null && \
+	make -j$(nproc) install &>/dev/null
 COPY src/libevent/ /usr/local/src/libevent/
 WORKDIR /usr/local/src/libevent
-RUN ./autogen.sh && ./configure --prefix=/usr/local >/dev/null && make -j >/dev/null && make install >/dev/null
+RUN ./autogen.sh && ./configure --prefix=/usr/local >/dev/null && make -j$(nproc) >/dev/null && make install >/dev/null
 COPY src/hwloc/ /usr/local/src/hwloc/
 WORKDIR /usr/local/src/hwloc
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug --disable-picky"; \
 	./autogen.sh >/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/hwloc/ $ARGS >/dev/null && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make install >/dev/null
 COPY src/pmix/ /usr/local/src/pmix/
 WORKDIR /usr/local/src/pmix
@@ -116,7 +116,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-pmix-timing" || 
 	unlink .git && \
 	./autogen.pl >/dev/null && \
 	./configure --prefix=/usr/local --sysconfdir=/etc/pmix/ --with-tests-examples $ARGS --with-libevent=/usr/local/ --enable-ipv6 >/dev/null && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make install >/dev/null
 COPY src/slurm/ /usr/local/src/slurm/
 WORKDIR /usr/local/src/slurm
@@ -129,7 +129,7 @@ RUN if [ ! -z "${DISABLE_DEVELOPER}" ]; then \
 	./configure --enable-slurmrestd --enable-multiple-slurmd $CONF_ARGS --with-munge=/usr/local/ --prefix=/usr/local \
 		--sharedstatedir=/run/slurm/ --with-pmix=/usr/local --with-hdf5=/usr/local/bin/h5cc \
 		--enable-pam --with-s2n=/usr/local --sysconfdir=/etc/slurm >/dev/null && \
-	make -j >/dev/null && make install >/dev/null && make -j install-contrib >/dev/null && \
+	make -j$(nproc) >/dev/null && make install >/dev/null && make -j$(nproc) install-contrib >/dev/null && \
 	cd contribs && make install >/dev/null && \
 	ln -nfs /usr/local/src/slurm/contribs/slurm_completion_help/slurm_completion.sh /etc/bash_completion.d/slurm_completion.sh
 COPY slurm.bash_profile /tmp/slurm.bash_profile
@@ -165,7 +165,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug" || ARGS="--enable-debug";
 		--without-rsh --without-mrsh --without-torque --without-dmalloc \
 		--with-ssh --prefix=/usr/local --sysconfdir=/etc/ --with-readline \
 		--with-slurm >/dev/null && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make install >/dev/null
 COPY src/openmpi/v4.1.8/ /usr/local/src/openmpi/v4.1.8/
 WORKDIR /usr/local/src/openmpi/v4.1.8/
@@ -176,7 +176,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	--with-pmix-libdir=/usr/local/lib --with-pmi=/usr/local --with-slurm \
 	$ARGS --without-cma --with-libevent=/usr/local \
 	--with-hwloc=/usr/local/ --enable-mca-no-build=btl-uct >/dev/null && \
-	make -j &>/dev/null && \
+	make -j$(nproc) &>/dev/null && \
 	make install >/dev/null
 COPY src/openmpi/v5.0.11/ /usr/local/src/openmpi/v5.0.11/
 WORKDIR /usr/local/src/openmpi/v5.0.11/
@@ -191,12 +191,12 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--without-devel-headers --disable-debug" |
 	--with-libevent-header=/usr/local/include \
 	--with-libevent-libs=/usr/local/lib --with-hwloc=/usr/local/ \
 	--enable-mca-no-build=btl-uct >/dev/null \
-	&& make -j &>/dev/null && \
+	&& make -j$(nproc) &>/dev/null && \
 	make install >/dev/null
 COPY src/msmtp/ /usr/local/src/msmtp/
 WORKDIR /usr/local/src/msmtp
 RUN autoreconf -i && ./configure >/dev/null && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make install >/dev/null && \
 	ln -nfs /usr/local/bin/msmtp /usr/sbin/sendmail && \
 	ln -nfs /usr/local/bin/msmtp /usr/lib/sendmail
@@ -222,7 +222,7 @@ ARG DISABLE_GNU_PARALLEL
 RUN test $DISABLE_GNU_PARALLEL || ( \
 	autoreconf -i >/dev/null && \
 	./configure --disable-documentation >/dev/null && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make install >/dev/null)
 
 COPY enroot.conf /tmp/enroot.conf
@@ -235,7 +235,7 @@ RUN [ ${DISABLE_PYXIS} ] || ( \
 	cd /usr/local/src/squashfuse && \
 	autoreconf -i >/dev/null && \
 	./configure --disable-demo >/dev/null && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make install >/dev/null )
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
 	[ ${DISABLE_PYXIS} ] || ( \
@@ -250,7 +250,7 @@ RUN [ ${DISABLE_DEVELOPER} ] && ARGS= || ARGS=DEBUG=1; \
 	mv /tmp/enroot.conf /etc/enroot/enroot.conf )
 COPY src/stressng/ /usr/local/src/stressng/
 WORKDIR /usr/local/src/stressng
-RUN make -j >/dev/null && \
+RUN make -j$(nproc) >/dev/null && \
 	make install >/dev/null
 COPY src/clush/ /usr/local/src/clush/
 WORKDIR /usr/local/src/clush
@@ -262,12 +262,12 @@ COPY src/conmon/ /usr/local/src/conmon/
 WORKDIR /usr/local/src/conmon
 RUN export GOCACHE="$(mktemp -d)" && \
 	unlink .git && \
-	make -j && make podman && make install
+	make -j$(nproc) && make podman && make install
 COPY src/podman/ /usr/local/src/podman/
 WORKDIR /usr/local/src/podman
 RUN export GOCACHE="$(mktemp -d)" && \
 	unlink .git && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make podman >/dev/null && \
 	make install >/dev/null
 COPY src/charliecloud/ /usr/local/src/charliecloud/
@@ -275,7 +275,7 @@ WORKDIR /usr/local/src/charliecloud
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-maintainer-mode" || ARGS="--enable-maintainer-mode"; \
 	./autogen.sh >/dev/null && \
 	./configure $ARGS --disable-dependency-tracking --enable-buggy-build --disable-test --disable-html >/dev/null && \
-	make -j >/dev/null && \
+	make -j$(nproc) >/dev/null && \
 	make install >/dev/null
 
 #make ssh host keys

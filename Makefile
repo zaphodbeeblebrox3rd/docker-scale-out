@@ -4,9 +4,18 @@ DC ?= $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" ||
 IS_PODMAN := $(shell docker --version 2>/dev/null | grep -qi podman && echo 1)
 PROGRESS_PLAIN ?= $(if $(IS_PODMAN),,--progress=plain)
 PROGRESS_QUIET ?= $(if $(IS_PODMAN),,--progress=quiet)
+# newer docker compose builds via buildx bake, which must be granted network.host
+USE_BAKE ?= $(if $(IS_PODMAN),,$(shell $(DC) build --help 2>/dev/null | grep -q -- '--print' && echo 1))
+BAKE_ALLOW ?= --allow=network.host
 SUBNET ?= 10.11
 SUBNET6 ?= 2001:db8:1:1::
 SLURM_RELEASE ?= master
+
+# $(call compose_build,<compose args>): pre-build with bake when needed, then run compose without rebuilding
+define compose_build
+	$(if $(USE_BAKE),$(DC) build --print 2>/dev/null | docker buildx bake -f - $(BAKE_ALLOW) $(PROGRESS_PLAIN) $(filter --no-cache,$(1)))
+	$(if $(and $(USE_BAKE),$(filter build,$(firstword $(1)))),,env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never $(PROGRESS_PLAIN) $(if $(USE_BAKE),$(patsubst --build,--no-build,$(1)),$(1)))
+endef
 
 ifdef SCALEOUT_DEFAULT_HOST
 	HOST ?= $(SCALEOUT_DEFAULT_HOST)
@@ -63,7 +72,7 @@ git-patches: git-slurm $(wildcard patch.d/*.patch)
 	)
 
 build: ./docker-compose.yml git-submodules git-patches git-slurm
-	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never $(PROGRESS_PLAIN) $(BUILD)
+	$(call compose_build,$(BUILD))
 
 stop:
 	test -f ./docker-compose.yml && $(DC) down || true
@@ -119,7 +128,7 @@ load:
 benchmark-%: clean-nodelist clean
 	$(eval SLURM_BENCHMARK := $(subst benchmark-,,$@))
 	env SLURM_BENCHMARK=$(SLURM_BENCHMARK) bash buildout.sh > ./docker-compose.yml
-	env COMPOSE_HTTP_TIMEOUT=3000 $(DC) --ansi=never $(PROGRESS_PLAIN) $(BUILD)
+	$(call compose_build,$(BUILD))
 	$(DC) up --remove-orphans -d
 	$(DC) exec $(HOST) bash -c '(find /root/benchmark/run.d/ -type f -name $(SLURM_BENCHMARK)\*.sh | xargs -i echo bash "{} &"; echo wait) | bash -x'
 	$(DC) $(PROGRESS_QUIET) down

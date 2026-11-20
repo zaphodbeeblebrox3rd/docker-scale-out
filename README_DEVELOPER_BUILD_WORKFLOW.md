@@ -68,7 +68,7 @@ Read these sections first:
 Current implementation detail:
 
 - `setup_2.sh` executes `make build`
-- `make build` currently maps to `docker compose up --build --remove-orphans -d`
+- `make build` currently maps to `docker compose up --build --remove-orphans -d` (bake pre-build plus `up --no-build` on Docker with buildx bake support)
 - That means containers are started during `make build`
 
 So if setup_2 was expected to only prepare images and not start services, current Makefile behavior is more aggressive than the setup_2 terminal message suggests.
@@ -401,6 +401,7 @@ Implication:
 - Depends on generated compose file.
 - Runs `$(DC) --ansi=never --progress=plain $(BUILD)`.
 - With default BUILD value this means up with build in detached mode.
+- When Docker Compose supports `build --print` (and the engine is not Podman), images are first built with `docker compose build --print | docker buildx bake -f - --allow=network.host`, because the compose `build.network: host` entries need that entitlement and Compose cannot grant it non-interactively. Compose then runs with `--no-build`. Override with `USE_BAKE=` to disable or `BAKE_ALLOW=` to change the entitlements.
 
 #### run
 
