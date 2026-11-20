@@ -88,7 +88,7 @@ function slurm_stage_in_allocator(id, bundle, spool_path, config_path)
 		end
 	end
 
-	-- crun requires user namespace but centos crun doesnt include this patch set
+	-- crun requires user namespace but centos crun doesn't include this patch set
 	-- https://github.com/containers/crun/pull/181/files
 	table.insert(c["linux"]["namespaces"], {type="user"})
 	-- user namespace requires mappings

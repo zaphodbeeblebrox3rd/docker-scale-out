@@ -137,10 +137,19 @@ To specify an explicit version of Slurm to be compiled and installed:
 Make sure to call `make clean` after to invalidate all the caches with the
 prior release.
 
+### To checkout source repository
+
+Third-party sources (Slurm, PMIx, munge, etc.) are pinned git submodules under `scaleout/src/`:
+
+```bash
+git clone --recurse-submodules --shallow-submodules https://github.com/zaphodbeeblebrox3rd/docker-scale-out.git
+cd docker-scale-out
+```
+
 ### To build images
 
 ```
-git submodule update --init --force --remote --recursive
+git submodule update --init --recursive --checkout --recommend-shallow --single-branch
 make build
 ```
 
@@ -238,12 +247,47 @@ sudo -u xdmod -- /usr/bin/xdmod-ingestor
 exit
 ```
 
+## How to disable building keycloak container
+
+This will disable attempts to build and start the keycloak container.
+This also disabled automatic population of /etc/slurm/jwks.json.
+
+```bash
+export DISABLE_KEYCLOAK=1
+```
+
+## How to disable building source in --developer mode
+
+Instruct autoconf and cmake to build in release/production mode instead of
+developer mode with debugging enabled.
+
+```bash
+export DISABLE_DEVELOPER=1
+```
+
 ## How to disable building xdmod container
 
 This is will only disable attempts to build and start the container.
 
 ```
 export DISABLE_XDMOD=1
+```
+
+## How to disable building enroot+pyxis
+
+This is will only disable attempts to build enroot and pyxis from source.
+
+```
+export DISABLE_PYXIS=1
+```
+
+## How to disable building GNU parallel
+
+This is will only disable attempts to build GNU parallel from source to work
+around the mirror being down.
+
+```
+export DISABLE_GNU_PARALLEL=1
 ```
 
 ## Maxing out kernel cgroups total
@@ -256,3 +300,16 @@ error: proctrack_g_create: No space left on device
 ```
 
 When this happens, fewer jobs must be run as this a kernel limitation.
+
+## Changing default bash host
+
+```bash
+export SCALEOUT_DEFAULT_HOST=mgmtnode
+make bash
+```
+
+## To force clean git submodules
+
+```
+git submodule deinit -f .
+```

@@ -16,7 +16,7 @@ update_submodules() {
     fi
 
     echo "Updating git submodules..."
-    git submodule update --init --force --remote --recursive
+    git submodule update --init --force --recursive --depth 1 --recommend-shallow
     if [ $? -ne 0 ]; then
         echo "Error: Failed to update git submodules"
         exit 1
