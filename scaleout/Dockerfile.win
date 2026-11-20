@@ -28,7 +28,7 @@ RUN dnf -y install 'dnf-command(config-manager)' && \
 # Install Slurm and dependencies
 RUN git clone --depth 1 --single-branch -b munge-0.5.18 https://github.com/dun/munge.git /usr/local/src/munge/ && \
     cd /usr/local/src/munge/ && \
-    autoreconf -i && ./configure --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
+    autoreconf -i && ./configure --localstatedir=/var --with-runstatedir=/var/run --prefix=/usr/local --sysconfdir=/etc/ >/dev/null && \
     make -j$(nproc) >/dev/null && make install >/dev/null
 
 RUN mkdir -p /etc/slurm /etc/pmix && \

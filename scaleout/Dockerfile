@@ -82,7 +82,7 @@ COPY src/munge/ /usr/local/src/munge/
 WORKDIR /usr/local/src/munge/
 RUN [ ${DISABLE_DEVELOPER} ] && ARGS="--disable-debug --disable-maintainer-mode" || ARGS="--enable-debug --enable-maintainer-mode"; \
 	autoreconf -i &>/dev/null && \
-	./configure $ARGS --localstatedir=/var --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
+	./configure $ARGS --localstatedir=/var --with-runstatedir=/var/run --prefix=/usr/local --sysconfdir=/etc/ &>/dev/null && \
 	make -j$(nproc) &>/dev/null && \
 	make install &>/dev/null
 COPY src/gdb/ /usr/local/src/gdb/
