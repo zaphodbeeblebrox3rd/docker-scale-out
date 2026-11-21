@@ -190,14 +190,12 @@ function Update-Submodules {
             throw "Not a git repository"
         }
 
-        Write-Host "Updating git submodules..."
+        Write-Host "Updating git submodules (shallow clones of pinned versions; first run may take several minutes)..."
         Write-Debug "Running git submodule update..."
-        $gitOutput = git submodule update --init --force --remote --recursive 2>$null
-        Write-Debug "Git output: $gitOutput"
-        
+        git submodule update --init --force --recursive --checkout --depth 1 --recommend-shallow --single-branch --progress
+
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Error: Failed to update git submodules. Exit code: $LASTEXITCODE"
-            Write-Error "Git output: $gitOutput"
             throw "Git submodule update failed"
         }
         Write-Host "Git submodules updated successfully"
