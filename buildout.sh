@@ -295,9 +295,9 @@ EOF
 fi
 
 cat <<EOF
-  elastic_data01:
-  elastic_data02:
-  elastic_data03:
+  opensearch_data01:
+  opensearch_data02:
+  opensearch_data03:
   mail:
   auth:
   xdmod:
@@ -685,14 +685,16 @@ $LOGGING
 $GRAFANA_PORTS
 $LOGGING
   es01:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.1
+    image: docker.io/opensearchproject/opensearch:3.10.0
     environment:
       - node.name=es01
       - cluster.name=scaleout
       - discovery.seed_hosts=es02,es03
-      - cluster.initial_master_nodes=es01,es02,es03
+      - cluster.initial_cluster_manager_nodes=es01,es02,es03
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
     ulimits:
@@ -700,7 +702,7 @@ $LOGGING
         soft: -1
         hard: -1
     volumes:
-      - elastic_data01:/usr/share/elasticsearch/data
+      - opensearch_data01:/usr/share/opensearch/data
       - /dev/log:/dev/log
     networks:
       internal:
@@ -709,14 +711,16 @@ $LOGGING
 ${ES_PORTS}
 $LOGGING
   es02:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.1
+    image: docker.io/opensearchproject/opensearch:3.10.0
     environment:
       - node.name=es02
       - cluster.name=scaleout
       - discovery.seed_hosts=es01,es03
-      - cluster.initial_master_nodes=es01,es02,es03
+      - cluster.initial_cluster_manager_nodes=es01,es02,es03
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
     ulimits:
@@ -724,7 +728,7 @@ $LOGGING
         soft: -1
         hard: -1
     volumes:
-      - elastic_data02:/usr/share/elasticsearch/data
+      - opensearch_data02:/usr/share/opensearch/data
       - /dev/log:/dev/log
     networks:
       internal:
@@ -732,14 +736,16 @@ $LOGGING
         ipv6_address: ${SUBNET6}1:16
 $LOGGING
   es03:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.1
+    image: docker.io/opensearchproject/opensearch:3.10.0
     environment:
       - node.name=es03
       - cluster.name=scaleout
       - discovery.seed_hosts=es01,es02
-      - cluster.initial_master_nodes=es01,es02,es03
+      - cluster.initial_cluster_manager_nodes=es01,es02,es03
       - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
     ulimits:
@@ -747,7 +753,7 @@ $LOGGING
         soft: -1
         hard: -1
     volumes:
-      - elastic_data03:/usr/share/elasticsearch/data
+      - opensearch_data03:/usr/share/opensearch/data
       - /dev/log:/dev/log
     networks:
       internal:
@@ -755,12 +761,13 @@ $LOGGING
         ipv6_address: ${SUBNET6}1:17
 $LOGGING
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:7.10.1
+    image: docker.io/opensearchproject/opensearch-dashboards:3.10.0
     volumes:
       - /dev/log:/dev/log
     environment:
       - SERVER_NAME=scaleout
-      - ELASTICSEARCH_HOSTS=http://es01:9200
+      - 'OPENSEARCH_HOSTS=["http://es01:9200","http://es02:9200","http://es03:9200"]'
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
     networks:

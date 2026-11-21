@@ -182,7 +182,7 @@ Parameter intent includes:
 
 - TCP backlog and netdev backlog expansion.
 - ARP neighbor gc thresholds and timings.
-- vm max map count for Elasticsearch.
+- vm max map count for OpenSearch.
 - inotify and file descriptor limits.
 
 Why it matters:
@@ -478,8 +478,8 @@ It is the primary source of truth for runtime topology because it generates full
 
 When subnet is default 10.11, script exposes host ports for services such as:
 
-- Elasticsearch 9200
-- Kibana 5601
+- OpenSearch 9200
+- OpenSearch Dashboards 5601
 - Proxy 8080
 - Grafana 3000
 - Open OnDemand 8081
@@ -538,9 +538,9 @@ Primary service families generated include:
   - influxdb
   - grafana
   - xdmod optionally
-- elastic stack components
-  - es01 es02 es03
-  - kibana
+- OpenSearch components
+  - es01 es02 es03 (OpenSearch nodes)
+  - kibana (OpenSearch Dashboards)
 
 ### Build versus image semantics in generated compose
 
@@ -596,8 +596,8 @@ From current buildout output and contexts:
 
 Pulled upstream images include:
 
-- docker.elastic.co elasticsearch oss 7.10.1
-- docker.elastic.co kibana oss 7.10.1
+- opensearchproject opensearch 3.10.0
+- opensearchproject opensearch-dashboards 3.10.0
 - base images required by each Dockerfile
 
 ### Why pull access denied messages may appear before local build succeeds
