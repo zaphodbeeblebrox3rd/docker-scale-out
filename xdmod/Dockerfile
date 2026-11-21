@@ -1,8 +1,8 @@
 #Based on https://github.com/ubccr/xdmod/blob/xdmod11.0/.circleci/config.yml
-FROM tools-ext-01.ccr.xdmod.org/xdmod-10.5.0-x86_64:rockylinux8.5-0.3
+FROM tools-ext-01.ccr.xdmod.org/xdmod:x86_64-rockylinux8.10-v11.0.4-2-all_realms-01
 RUN yum update --exclude google-chrome-* -y
 RUN yum upgrade --exclude google-chrome-* -y
-RUN systemctl enable postfix.service mariadb.service httpd.service
+RUN systemctl enable postfix.service mariadb.service php-fpm.service httpd.service
 RUN sed -e 's#:443#:80#' -e 's#SSLEngine on#SSLEngine off#g' -i /etc/httpd/conf.d/xdmod.conf
 COPY resources.json /etc/xdmod/resources.json2
 COPY resource_specs.json /etc/xdmod/resource_specs.json2
