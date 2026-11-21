@@ -23,5 +23,8 @@ ls /usr/lib/systemd/system/slurm*.service | while read s; do
 	echo -e "[Service]\nEnvironment=SLURM_FEDERATION_CLUSTER=${SLURM_FEDERATION_CLUSTER}\n" >${s}.d/cluster.conf
 done
 
+#cgroup v2 with a private cgroup namespace: systemd needs /sys/fs/cgroup writable
+[ -f /sys/fs/cgroup/cgroup.controllers ] && mount -o remount,rw /sys/fs/cgroup 2>/dev/null
+
 #start systemd
 exec /lib/systemd/systemd --system --log-level=info --crash-reboot --log-target=console

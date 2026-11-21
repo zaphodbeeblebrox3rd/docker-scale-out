@@ -514,8 +514,8 @@ Important detail:
 
 Script checks cgroup v2 marker `/sys/fs/cgroup/cgroup.controllers`.
 
-- If missing, emits one mount strategy.
-- If present, emits cgroup v2 aware mount strategy including docker.slice path mount.
+- If missing (cgroup v1), bind mounts the host `/sys` and `/sys/fs/cgroup` read-only.
+- If present (cgroup v2), does not bind mount any host cgroup paths and sets `cgroup: private` on every service. `startup.sh` remounts the container's own `/sys/fs/cgroup` read-write before exec'ing systemd, so systemd and Slurm work without relying on the daemon's `cgroup-parent`/`default-cgroupns-mode` settings.
 
 This is one of the most environment sensitive portions of runtime setup.
 
