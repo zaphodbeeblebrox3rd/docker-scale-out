@@ -191,6 +191,8 @@ function Update-Submodules {
         }
 
         Write-Host "Updating git submodules (shallow clones of pinned versions; first run may take several minutes)..."
+        # Some submodules (e.g. openapi-generator) contain paths longer than MAX_PATH
+        git config --global core.longpaths true
         Write-Debug "Running git submodule update..."
         git submodule update --init --force --recursive --checkout --depth 1 --recommend-shallow --single-branch --progress
 
