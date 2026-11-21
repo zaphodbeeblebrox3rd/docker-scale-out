@@ -1170,7 +1170,8 @@ After any workflow change, validate these in order.
 When behavior changes, update all of these:
 
 - `README.md` user facing quick start
-- this deep dive file
+- this deep dive file (`docs/developer-build-workflow.md`)
+- the topic guides under `docs/`
 - setup script terminal success messages
 - any troubleshooting callouts tied to changed behavior
 
