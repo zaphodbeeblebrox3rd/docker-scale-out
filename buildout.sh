@@ -9,6 +9,10 @@ LOCAL_TIME="$(readlink -e /etc/localtime)"
 
 #only mount cgroups with v1
 #https://github.com/jepsen-io/jepsen/issues/532#issuecomment-1128067136
+#with v2, each container gets a private cgroup namespace that startup.sh
+#remounts rw for systemd, independent of the daemon's default-cgroupns-mode
+CGROUPNS=
+[ -f /sys/fs/cgroup/cgroup.controllers ] && CGROUPNS="    cgroup: private"
 [ ! -f /sys/fs/cgroup/cgroup.controllers ] && SYSDFSMOUNTS="
 ${LOCAL_TIME_MOUNT}
       - /run/
@@ -22,9 +26,6 @@ ${LOCAL_TIME_MOUNT}
 ${LOCAL_TIME_MOUNT}
       - /run/
       - /run/lock/
-      - /sys/
-      - /sys/fs/cgroup/:/sys/fs/cgroup/:ro
-      - /sys/fs/cgroup/docker.slice/:/sys/fs/cgroup/docker.slice/:rw
       - /sys/fs/fuse/:/sys/fs/fuse/:rw
       - /tmp/
       - /var/lib/journal
@@ -179,6 +180,7 @@ fi
 
 LOGGING="
     tty: true
+${CGROUPNS}
     logging:
       driver: local
     cap_add:

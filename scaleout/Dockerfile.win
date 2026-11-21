@@ -139,6 +139,7 @@ RUN chmod 755 /usr/local/src/startup.sh && \
     file /usr/local/src/startup.sh && \
     head -n 1 /usr/local/src/startup.sh && \
     ln -sf /usr/local/src/startup.sh /sbin/startup.sh && \
+    ln -sf /usr/local/src/slurmdbd.startup.sh /usr/local/bin/slurmdbd.startup.sh && \
     chmod 755 /usr/local/src/*.sh && \
     dos2unix /usr/local/src/*.sh && \
     sed -i 's/\r$//' /usr/local/src/*.sh && \
