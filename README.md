@@ -8,7 +8,7 @@ Docker compose cluster for Slurm training
 
 ## Requirements
 - Root access (for running setup scripts and Docker)
-- **Memory:** Minimum 12 GB RAM (16 GB or more recommended for a full stack with Elasticsearch, Slurm, and all services)
+- **Memory:** Minimum 12 GB RAM (16 GB or more recommended for a full stack with OpenSearch, Slurm, and all services)
 - **Disk:** At least 30 GB free space for container images, build artifacts, and volumes
 - **CPU architecture:** x86_64 (amd64) or arm64 (aarch64)
 
@@ -34,10 +34,10 @@ Nginx Proxy node:
 Rest API Nodes:
   * rest
 
-Kibana (Only supports IPv4):
+OpenSearch Dashboards (Only supports IPv4):
   * View http://127.0.0.1:5601/
 
-Elasticsearch:
+OpenSearch (Slurm `jobcomp/elasticsearch` target):
   * View http://localhost:9200/
 
 Grafana:

@@ -372,7 +372,7 @@ net.ipv4.neigh.default.gc_thresh3 = 8096
 net.ipv4.neigh.default.gc_thresh2 = 4048
 net.ipv4.neigh.default.gc_thresh1 = 1024
 
-# Increase map count for elasticsearch
+# Increase map count for opensearch
 vm.max_map_count=262144
 
 # Avoid running out of file descriptors
