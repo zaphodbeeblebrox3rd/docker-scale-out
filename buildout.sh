@@ -1,6 +1,12 @@
 #!/bin/bash
 unset MAC
 [[ $OSTYPE == 'darwin'* ]] && MAC=1
+#cloud mode bind mounts a Unix socket from the host, which Docker Desktop on Windows can't pass into containers
+[[ $OSTYPE == msys || $OSTYPE == cygwin ]] && DISABLE_CLOUD_NODES=1
+if [ "$CLOUD" ] && [ "$DISABLE_CLOUD_NODES" ]; then
+	echo "Cloud mode is not available on Windows or with DISABLE_CLOUD_NODES set" >&2
+	exit 1
+fi
 
 LOCAL_TIME_MOUNT=
 LOCAL_TIME="$(readlink -e /etc/localtime)"
@@ -352,6 +358,7 @@ $HOSTLIST
         DISABLE_GNU_PARALLEL: "$DISABLE_GNU_PARALLEL"
         DISABLE_KEYCLOAK: "$DISABLE_KEYCLOAK"
         DISABLE_DEVELOPER: "$DISABLE_DEVELOPER"
+        DISABLE_CLOUD_NODES: "$DISABLE_CLOUD_NODES"
         CMAKE_BUILD_TYPE: "$CMAKE_BUILD_TYPE"
 ${BUILD_ARGS}
       network: host

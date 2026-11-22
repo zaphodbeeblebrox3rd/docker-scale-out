@@ -426,6 +426,8 @@ COPY lab_scripts/* /lab_scripts/
 
 RUN mkdir -m 0755 -p /etc/slurm/
 COPY slurm/ /etc/slurm/
+ARG DISABLE_CLOUD_NODES
+RUN if [ "$DISABLE_CLOUD_NODES" ]; then sed -e '/^NodeName=cloud/d' -e '/^PartitionName=cloud/d' -i /etc/slurm/slurm.conf; fi
 
 RUN test -s /etc/slurm/jwt.key || dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key; \
 	chown slurm:slurm -R /etc/slurm/ &&\
