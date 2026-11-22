@@ -653,19 +653,9 @@ $LOGGING
       network: host
     image: influxdb
     command: ["bash", "-c", "/setup.sh & source /entrypoint.sh"]
-    #first-time setup can lose a race with influxd's startup migrations (503); the entrypoint cleans up so a retry starts fresh
-    restart: on-failure
     environment:
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=user
-      - DOCKER_INFLUXDB_INIT_PASSWORD=password
-      - DOCKER_INFLUXDB_INIT_ORG=scaleout
-      - DOCKER_INFLUXDB_INIT_BUCKET=scaleout
-      - DOCKER_INFLUXDB_INIT_RETENTION=1w
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=token
-      - DOCKER_INFLUXDB_INIT_USER_ID=
       - INFLUXDB_DATA_QUERY_LOG_ENABLED=true
       - INFLUXDB_REPORTING_DISABLED=false
       - INFLUXDB_HTTP_LOG_ENABLED=true
