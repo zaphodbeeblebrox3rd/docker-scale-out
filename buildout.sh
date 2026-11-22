@@ -653,6 +653,8 @@ $LOGGING
       network: host
     image: influxdb
     command: ["bash", "-c", "/setup.sh & source /entrypoint.sh"]
+    #first-time setup can lose a race with influxd's startup migrations (503); the entrypoint cleans up so a retry starts fresh
+    restart: on-failure
     environment:
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
