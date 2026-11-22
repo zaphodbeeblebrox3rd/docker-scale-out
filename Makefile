@@ -1,3 +1,13 @@
+# Windows: run recipes and $(shell) in Git Bash, as on Linux, when make is started outside Git Bash (cmd.exe can't run them)
+ifeq ($(OS),Windows_NT)
+ifndef MSYSTEM
+GIT_ROOT := $(subst /mingw64/libexec/git-core,,$(shell git --exec-path))
+export PATH := $(GIT_ROOT)/usr/bin;$(PATH)
+SHELL := sh.exe
+export MSYS_NO_PATHCONV := 1
+endif
+endif
+
 BUILD ?= up --build --remove-orphans -d
 DC ?= $(shell docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
 # podman-backed docker delegates to an external compose provider without --progress
