@@ -625,7 +625,7 @@ try {
     
     # Display connection instructions
     Write-Host "`nTo connect to the login node, you can use either of these methods:" -ForegroundColor Cyan
-    Write-Host "1. From Git Bash in this directory:" -ForegroundColor Yellow
+    Write-Host "1. From PowerShell or Git Bash in this directory:" -ForegroundColor Yellow
     Write-Host "   make bash" -ForegroundColor White
     Write-Host "2. Using Docker directly:" -ForegroundColor Yellow
     Write-Host "   docker exec -it docker-scale-out-login-1 bash" -ForegroundColor White

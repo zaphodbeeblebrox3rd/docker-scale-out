@@ -36,6 +36,6 @@ To build a different Slurm release, see [Customization](customization.md#slurm-v
 
 ## Windows
 
-`setup_win.ps1` installs Git for Windows and GNU make, then runs the same Makefile as Linux in Git Bash. To rebuild by hand, open Git Bash in the repository and use the commands above, for example `make build`.
+`setup_win.ps1` installs Git for Windows and GNU make, then runs the same Makefile as Linux in Git Bash. To rebuild by hand, use the commands above from PowerShell or Git Bash, for example `make build`. When make runs outside Git Bash, the Makefile runs its commands in Git Bash itself.
 
 `buildout.ps1` and `Makefile.win` are an older Windows-only build that does not build the Slurm image. `setup_win.ps1` no longer uses them.
