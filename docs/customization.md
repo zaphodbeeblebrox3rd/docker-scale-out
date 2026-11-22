@@ -47,6 +47,7 @@ Set any of these before building to skip a component:
 | `DISABLE_PYXIS=1` | Do not build enroot and pyxis from source |
 | `DISABLE_GNU_PARALLEL=1` | Do not build GNU parallel from source (workaround when its mirror is down) |
 | `DISABLE_DEVELOPER=1` | Build Slurm and other sources in release mode instead of developer/debug mode |
+| `DISABLE_GPU=1` | Do not add the `gpu01` node even when the host has an NVIDIA GPU; see [GPUs](GPU.md) |
 | `DISABLE_CLOUD_NODES=1` | Leave the `cloud` nodes and partition out of `slurm.conf`; always set on Windows |
 
 ## Federation mode
