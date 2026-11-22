@@ -16,6 +16,9 @@ CGROUP_VERSION="$(docker info --format '{{.CgroupVersion}}' 2>/dev/null)"
 if [ -z "$CGROUP_VERSION" ]; then
 	[ -f /sys/fs/cgroup/cgroup.controllers ] && CGROUP_VERSION=2 || CGROUP_VERSION=1
 fi
+#Docker Desktop's VM has a dangling /dev/log symlink, which can't be bind mounted
+DEVLOG_MOUNT="      - /dev/log:/dev/log"
+[ "$(docker info --format '{{.OperatingSystem}}' 2>/dev/null)" = "Docker Desktop" ] && DEVLOG_MOUNT=
 CGROUPNS=
 [ "$CGROUP_VERSION" = 2 ] && CGROUPNS="    cgroup: private"
 [ "$CGROUP_VERSION" != 2 ] && SYSDFSMOUNTS="
@@ -629,7 +632,7 @@ cat <<EOF
       - SUBNET6="${SUBNET6}"
       - DEFAULT_SSHHOST=login
     volumes:
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
       - etc-ssh:/etc/shared-ssh
       - home:/home/
     networks:
@@ -667,7 +670,7 @@ $LOGGING
         soft: -1
         hard: -1
     volumes:
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.19
@@ -682,7 +685,7 @@ $LOGGING
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
     volumes:
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.20
@@ -708,7 +711,7 @@ $LOGGING
         hard: -1
     volumes:
       - opensearch_data01:/usr/share/opensearch/data
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.15
@@ -734,7 +737,7 @@ $LOGGING
         hard: -1
     volumes:
       - opensearch_data02:/usr/share/opensearch/data
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.16
@@ -759,7 +762,7 @@ $LOGGING
         hard: -1
     volumes:
       - opensearch_data03:/usr/share/opensearch/data
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.17
@@ -768,7 +771,7 @@ $LOGGING
   kibana:
     image: docker.io/opensearchproject/opensearch-dashboards:3.10.0
     volumes:
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     environment:
       - SERVER_NAME=scaleout
       - 'OPENSEARCH_HOSTS=["http://es01:9200","http://es02:9200","http://es03:9200"]'
@@ -817,7 +820,7 @@ $HOSTLIST
         ipv6_address: ${SUBNET6}1:7
     volumes:
       - auth:/auth/
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
 $LOGGING
 ${PROXY_PORTS}
     depends_on:
