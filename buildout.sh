@@ -11,9 +11,14 @@ LOCAL_TIME="$(readlink -e /etc/localtime)"
 #https://github.com/jepsen-io/jepsen/issues/532#issuecomment-1128067136
 #with v2, each container gets a private cgroup namespace that startup.sh
 #remounts rw for systemd, independent of the daemon's default-cgroupns-mode
+#ask the daemon, since this script may not run on the docker host (e.g. Git Bash with Docker Desktop)
+CGROUP_VERSION="$(docker info --format '{{.CgroupVersion}}' 2>/dev/null)"
+if [ -z "$CGROUP_VERSION" ]; then
+	[ -f /sys/fs/cgroup/cgroup.controllers ] && CGROUP_VERSION=2 || CGROUP_VERSION=1
+fi
 CGROUPNS=
-[ -f /sys/fs/cgroup/cgroup.controllers ] && CGROUPNS="    cgroup: private"
-[ ! -f /sys/fs/cgroup/cgroup.controllers ] && SYSDFSMOUNTS="
+[ "$CGROUP_VERSION" = 2 ] && CGROUPNS="    cgroup: private"
+[ "$CGROUP_VERSION" != 2 ] && SYSDFSMOUNTS="
 ${LOCAL_TIME_MOUNT}
       - /run/
       - /run/lock/

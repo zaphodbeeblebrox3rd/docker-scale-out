@@ -32,6 +32,8 @@ Run in an elevated PowerShell:
 .\setup_win.ps1
 ```
 
+It installs any missing prerequisites (Git for Windows with Git Bash, GNU make, Docker Desktop), then runs the same `make build` as Linux in Git Bash. Run later `make` commands from Git Bash.
+
 ## Web interfaces
 
 | Service | URL | Login |

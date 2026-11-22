@@ -94,6 +94,8 @@ function Test-CommandExists {
 # Function to list out all packages that will be installed
 function List-Packages {
     Write-Host "`nThe following packages will be installed:" -ForegroundColor Yellow
+    Write-Host "  - Git for Windows (git and Git Bash)" -ForegroundColor Yellow
+    Write-Host "  - GNU make" -ForegroundColor Yellow
     Write-Host "  - Docker Desktop" -ForegroundColor Yellow
     Write-Host "  - Python 3.11" -ForegroundColor Yellow
     Write-Host "  - jq" -ForegroundColor Yellow
@@ -143,6 +145,60 @@ function Test-VisualStudioBuildTools {
     return $false
 }
 
+# Function to refresh PATH after installing packages
+function Update-PathFromRegistry {
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+}
+
+# Function to install a package with winget
+function Install-WingetPackage {
+    param([string]$Id)
+    if (-not (Test-CommandExists winget)) {
+        throw "winget is not available. Please install $Id manually and try again."
+    }
+    Write-Host "Installing $Id using winget..."
+    winget install -e --id $Id --accept-source-agreements --accept-package-agreements
+    Update-PathFromRegistry
+}
+
+# Function to find Git for Windows' bash.exe (not the WSL bash.exe in System32)
+function Find-GitBash {
+    $candidates = @()
+    $git = Get-Command git -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($git) {
+        # git.exe lives in <Git>\cmd or <Git>\mingw64\bin
+        $gitDir = Split-Path (Split-Path $git.Source -Parent) -Parent
+        $candidates += Join-Path $gitDir "bin\bash.exe"
+        $candidates += Join-Path (Split-Path $gitDir -Parent) "bin\bash.exe"
+    }
+    $candidates += "$env:ProgramFiles\Git\bin\bash.exe", "${env:ProgramFiles(x86)}\Git\bin\bash.exe", "$env:LOCALAPPDATA\Programs\Git\bin\bash.exe"
+    return $candidates | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+}
+
+# Function to ensure git, Git Bash and GNU make are available; the build runs the Linux Makefile in Git Bash
+function Ensure-BuildTools {
+    Write-Host "Checking for Git for Windows (git and Git Bash)..."
+    if (-not (Test-CommandExists git) -or -not (Find-GitBash)) {
+        Install-WingetPackage "Git.Git"
+    }
+    $script:GitBash = Find-GitBash
+    if (-not (Test-CommandExists git) -or -not $script:GitBash) {
+        throw "Git for Windows was not found after installation. Install it from https://git-scm.com/download/win and try again."
+    }
+    Write-Host "Found Git Bash at $script:GitBash" -ForegroundColor Green
+
+    Write-Host "Checking for GNU make..."
+    & $script:GitBash -c "command -v make >/dev/null"
+    if ($LASTEXITCODE -ne 0) {
+        Install-WingetPackage "ezwinports.make"
+        & $script:GitBash -c "command -v make >/dev/null"
+        if ($LASTEXITCODE -ne 0) {
+            throw "GNU make was not found after installation. Run 'winget install ezwinports.make' and try again."
+        }
+    }
+    Write-Host "Found GNU make" -ForegroundColor Green
+}
+
 # Function to update git submodules
 function Update-Submodules {
     Write-Debug "Starting Update-Submodules function..."
@@ -151,35 +207,7 @@ function Update-Submodules {
         Write-Debug "Checking for git installation..."
         
         if (-not (Test-CommandExists git)) {
-            Write-Host "Git is not installed. Attempting to install Git..."
-            
-            if (Test-CommandExists winget) {
-                Write-Host "Installing Git using winget..."
-                try {
-                    Write-Debug "Running winget install for Git..."
-                    $wingetOutput = winget install -e --id Git.Git 2>$null
-                    Write-Debug "Winget output: $wingetOutput"
-                    Write-Debug "Git installation completed"
-                }
-                catch {
-                    Write-Error "Failed to install Git. Error: $($_.Exception.Message)"
-                    throw
-                }
-                
-                # Refresh environment variables
-                Write-Debug "Refreshing environment variables..."
-                $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-                
-                if (-not (Test-CommandExists git)) {
-                    Write-Error "Error: Git installation failed. Please install Git manually and try again."
-                    throw "Git installation verification failed"
-                }
-                Write-Host "Git installed successfully"
-            }
-            else {
-                Write-Error "Error: winget is not available. Please install Git manually and try again."
-                throw "Winget not available"
-            }
+            throw "git not found"
         }
 
         Write-Debug "Checking for .git directory..."
@@ -196,14 +224,17 @@ function Update-Submodules {
         Write-Debug "Running git submodule update..."
         $submoduleArgs = @("--init", "--force", "--recursive", "--checkout", "--depth", "1", "--recommend-shallow", "--single-branch", "--progress")
         # Slurm has src/conmgr/con.c; Windows 11 allows it but git rejects reserved device names unless core.protectNTFS is off
-        git -c core.protectNTFS=false submodule update @submoduleArgs -- scaleout/src/slurm
+        # Sources are built inside Linux containers, so never convert them to CRLF
+        git -c core.protectNTFS=false -c core.autocrlf=false submodule update @submoduleArgs -- scaleout/src/slurm
         if ($LASTEXITCODE -eq 0) { git -C scaleout/src/slurm config core.protectNTFS false }
-        git submodule update @submoduleArgs
+        git -c core.autocrlf=false submodule update @submoduleArgs
 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Error: Failed to update git submodules. Exit code: $LASTEXITCODE"
             throw "Git submodule update failed"
         }
+        # Keep LF for later checkouts too (make build checks out the requested Slurm release)
+        git submodule foreach --recursive --quiet "git config core.autocrlf false"
         Write-Host "Git submodules updated successfully"
     }
     catch {
@@ -515,213 +546,22 @@ function Start-Build {
         }
     }
 
-    # Check if we're in the correct directory
-    Write-Host "Checking for Makefile.win..." -ForegroundColor Yellow
-    if (-not (Test-Path "Makefile.win")) {
-        Write-Error "Error: Makefile.win not found. Please run this script from the repository root."
-        Write-Host "Current directory: $(Get-Location)" -ForegroundColor Red
-        exit 1
-    }
-    Write-Host "Makefile.win found successfully" -ForegroundColor Green
+    # Same build as Linux: buildout.sh generates docker-compose.yml, then the Makefile builds the images and starts the cluster
+    $env:SUBNET = $Subnet
+    $env:SUBNET6 = $Subnet6
+    # Stop Git Bash from rewriting container paths such as /bin/bash into Windows paths
+    $env:MSYS_NO_PATHCONV = "1"
+    # Always regenerate docker-compose.yml from buildout.sh
+    Remove-Item "docker-compose.yml" -ErrorAction SilentlyContinue
 
-    # Clean any previous build artifacts
-    Write-Host "Cleaning previous build artifacts..." -ForegroundColor Yellow
-    try {
-        # Clean up files directly
-        if (Test-Path "scaleout\nodelist") {
-            Write-Host "Removing nodelist..." -ForegroundColor Gray
-            Remove-Item "scaleout\nodelist" -Force
-        }
-        if (Test-Path "scaleout\hosts.nodes") {
-            Write-Host "Removing hosts.nodes..." -ForegroundColor Gray
-            Remove-Item "scaleout\hosts.nodes" -Force
-        }
-        Write-Host "Clean completed successfully" -ForegroundColor Green
-    }
-    catch {
-        Write-Error "Error during cleanup: $($_.Exception.Message)"
-        # Don't exit here, continue with the build
+    Write-Host "Running 'make build' in Git Bash (the first build takes a long time)..." -ForegroundColor Yellow
+    & $script:GitBash -c "make build 2>&1"
+    if ($LASTEXITCODE -ne 0) {
+        throw "make build failed with exit code $LASTEXITCODE"
     }
 
-    # Build the images
-    Write-Host "Building Docker images..." -ForegroundColor Yellow
-    try {
-        Write-Host "Running build command..." -ForegroundColor Gray
-        
-        # First, let's check if we have the required files
-        Write-Host "Checking required files..." -ForegroundColor Gray
-        $requiredFiles = @(
-            "scaleout/Dockerfile",
-            "Makefile.win"
-        )
-        
-        $missingFiles = @()
-        foreach ($file in $requiredFiles) {
-            Write-Host "Checking for $file..." -ForegroundColor Gray
-            if (-not (Test-Path $file)) {
-                $missingFiles += $file
-                Write-Host "Missing: $file" -ForegroundColor Red
-            } else {
-                Write-Host "Found: $file" -ForegroundColor Green
-            }
-        }
-        
-        if ($missingFiles.Count -gt 0) {
-            Write-Error "The following required files are missing:"
-            foreach ($file in $missingFiles) {
-                Write-Error "  - $file"
-            }
-            Write-Error "Please ensure all required files are present in the correct locations."
-            Write-Error "Current directory: $(Get-Location)"
-            throw "Missing required files"
-        }
-        
-        # Run the build command with detailed output
-        Write-Host "Executing build command..." -ForegroundColor Gray
-        Write-Host "Current directory: $(Get-Location)" -ForegroundColor Yellow
-        Write-Host "Directory contents:" -ForegroundColor Yellow
-        Get-ChildItem -Force | Format-Table Name, Length, LastWriteTime
-        
-        # Execute make command and capture output
-        $process = Start-Process -FilePath "make" -ArgumentList "-f", "Makefile.win", "build" -NoNewWindow -Wait -PassThru -RedirectStandardOutput "make_output.txt" -RedirectStandardError "make_error.txt"
-        
-        # Read and display the output
-        if (Test-Path "make_output.txt") {
-            Write-Host "`nBuild command standard output:" -ForegroundColor Gray
-            Get-Content "make_output.txt" | ForEach-Object { Write-Host $_ -ForegroundColor Gray }
-        }
-        
-        if (Test-Path "make_error.txt") {
-            Write-Host "`nBuild command error output:" -ForegroundColor Red
-            Get-Content "make_error.txt" | ForEach-Object { Write-Host $_ -ForegroundColor Red }
-        }
-        
-        # Clean up temporary files
-        Remove-Item "make_output.txt" -ErrorAction SilentlyContinue
-        Remove-Item "make_error.txt" -ErrorAction SilentlyContinue
-        
-        if ($process.ExitCode -ne 0) {
-            Write-Error "Build command failed with exit code $($process.ExitCode)"
-            
-            # Check for common issues
-            $errorContent = if (Test-Path "make_error.txt") { Get-Content "make_error.txt" -Raw } else { "" }
-            if ($errorContent -match "permission denied") {
-                Write-Error "Permission denied error detected. Please ensure you have the necessary permissions."
-            }
-            elseif ($errorContent -match "no such file") {
-                Write-Error "Missing file error detected. Please ensure all required files are present."
-            }
-            elseif ($errorContent -match "network") {
-                Write-Error "Network error detected. Please check your internet connection and Docker network settings."
-            }
-            elseif ($errorContent -match "authentication required" -or $errorContent -match "unauthorized") {
-                throw "Registry authorization error encountered. User setup does not perform docker login; ensure required images are publicly accessible and reachable."
-            }
-            
-            throw "Build command failed with exit code $($process.ExitCode)"
-        }
-        
-        Write-Host "Build completed successfully" -ForegroundColor Green
-    }
-    catch {
-        Write-Error "Error: Failed to build Docker images"
-        Write-Error "Error details: $($_.Exception.Message)"
-        Write-Host "`nCurrent directory: $(Get-Location)" -ForegroundColor Yellow
-        Write-Host "Directory contents:" -ForegroundColor Yellow
-        Get-ChildItem -Force | Format-Table Name, Length, LastWriteTime
-        exit 1
-    }
-
-    # Verify images were built successfully
-    Write-Host "Verifying Docker images..." -ForegroundColor Yellow
-    $requiredImages = @("scaleout", "grafana")
-    $missingImages = $false
-
-    foreach ($image in $requiredImages) {
-        Write-Host "Checking for image: $image" -ForegroundColor Gray
-        try {
-            $imageInfo = Invoke-Expression "docker image inspect $image" | Out-String
-            Write-Host "Image $image found successfully" -ForegroundColor Green
-            Write-Host "Image details: $imageInfo" -ForegroundColor Gray
-        }
-        catch {
-            Write-Error "Error: Required image '$image' was not built successfully"
-            Write-Error "Docker inspect output: $imageInfo"
-            $missingImages = $true
-        }
-    }
-
-    if ($missingImages) {
-        Write-Error "Error: Some required images are missing. Please check the build output for errors."
-        Write-Host "Available Docker images:" -ForegroundColor Yellow
-        docker images
-        exit 1
-    }
-
-    # Start the cluster
-    Write-Host "Starting the cluster..." -ForegroundColor Yellow
-    try {
-        Write-Host "Running docker compose command..." -ForegroundColor Gray
-        
-        # First verify docker-compose.yml exists
-        if (-not (Test-Path "docker-compose.yml")) {
-            Write-Error "Error: docker-compose.yml not found. The build process may have failed."
-            throw "Missing docker-compose.yml"
-        }
-        
-        # Show docker-compose.yml contents for debugging
-        Write-Host "`nContents of docker-compose.yml:" -ForegroundColor Yellow
-        Get-Content "docker-compose.yml" | ForEach-Object { Write-Host $_ -ForegroundColor Gray }
-        
-        # Check Docker status before proceeding
-        Write-Host "`nChecking Docker status before starting cluster..." -ForegroundColor Yellow
-        Write-Host "Running: docker info" -ForegroundColor Gray
-        $dockerStatus = Invoke-Expression "docker info" | Out-String
-        Write-Host "Docker info:" -ForegroundColor Gray
-        Write-Host $dockerStatus
-        
-        # Start the cluster using docker compose
-        Write-Host "`nStarting cluster with docker compose..." -ForegroundColor Yellow
-        Write-Host "Current directory: $(Get-Location)" -ForegroundColor Gray
-        Write-Host "`nRunning: docker compose up -d" -ForegroundColor Gray
-        
-        # Run docker compose up and capture output
-        $composeOutput = Invoke-Expression "docker compose up -d" | Out-String
-        Write-Host "Docker compose output:" -ForegroundColor Gray
-        Write-Host $composeOutput
-        
-        # Check if containers are running
-        Write-Host "`nVerifying container status..." -ForegroundColor Yellow
-        $runningContainers = Invoke-Expression 'docker ps --format "{{.Names}}: {{.Status}}"' | Out-String
-        Write-Host "Running containers:" -ForegroundColor Green
-        Write-Host $runningContainers
-        
-        # If we get here, the command was successful
-        Write-Host "Cluster started successfully" -ForegroundColor Green
-    }
-    catch {
-        Write-Error "Error: Failed to start the cluster"
-        Write-Error "Error details: $($_.Exception.Message)"
-        
-        # Additional diagnostic information
-        Write-Host "`nDiagnostic Information:" -ForegroundColor Yellow
-        Write-Host "Docker version:" -ForegroundColor Gray
-        docker version
-        Write-Host "`nDocker info:" -ForegroundColor Gray
-        docker info
-        Write-Host "`nDocker compose version:" -ForegroundColor Gray
-        docker compose version
-        Write-Host "`nCurrent directory:" -ForegroundColor Gray
-        Get-Location
-        Write-Host "`nDirectory contents:" -ForegroundColor Gray
-        Get-ChildItem -Force | Format-Table Name, Length, LastWriteTime
-        
-        # Show the actual error output
-        Write-Host "`nDocker compose output:" -ForegroundColor Red
-        Write-Host $composeOutput
-        
-        exit 1
-    }
+    Write-Host "`nContainer status:" -ForegroundColor Yellow
+    docker compose ps -a --format "{{.Name}}: {{.Status}}"
 
     Write-Host "Build and deployment completed successfully!" -ForegroundColor Green
 }
@@ -731,53 +571,10 @@ function Invoke-Cleanup {
     param($ExitCode)
     if ($ExitCode -ne 0) {
         Write-Host "Build failed with exit code $ExitCode" -ForegroundColor Red
-        Write-Host "Attempting to clean up..." -ForegroundColor Yellow
-        try {
-            $cleanupOutput = make -f Makefile.win clean 2>$null
-            Write-Host "Cleanup output: $cleanupOutput" -ForegroundColor Gray
-            if ($LASTEXITCODE -ne 0) {
-                Write-Error "Cleanup failed with exit code $LASTEXITCODE"
-            }
-        }
-        catch {
-            Write-Error "Error during cleanup: $($_.Exception.Message)"
-            Write-Error "Cleanup output: $cleanupOutput"
-        }
+        Write-Host "Fix the error above and rerun this script; it resumes from the existing images and volumes." -ForegroundColor Yellow
     }
     exit $ExitCode
 }
-
-# Function to handle 'make host' command
-function Connect-ToHost {
-    param(
-        [string]$HostName
-    )
-    
-    $containerName = "docker-scale-out-${HostName}-1"
-    
-    # Check if container exists
-    $container = docker ps -a --filter "name=$containerName" --format "{{.Names}}"
-    if (-not $container) {
-        Write-Error "Container for host '$HostName' not found. Available containers:"
-        docker ps --format "{{.Names}}"
-        return
-    }
-    
-    # Check if container is running
-    $status = docker ps --filter "name=$containerName" --format "{{.Status}}"
-    if (-not $status) {
-        Write-Error "Container $containerName is not running. Current status:"
-        docker ps -a --filter "name=$containerName" --format "{{.Names}}: {{.Status}}"
-        return
-    }
-    
-    # Connect to the container
-    Write-Host "Connecting to $containerName..." -ForegroundColor Green
-    docker exec -it $containerName bash
-}
-
-# Add alias for make host command
-Set-Alias -Name make -Value Connect-ToHost -Force
 
 # Main execution
 try {
@@ -793,7 +590,8 @@ try {
     # List packages and get user confirmation
     List-Packages
 
-    # Update git submodules
+    # Ensure git, Git Bash and GNU make, then update git submodules
+    Ensure-BuildTools
     Update-Submodules
 
     # Install required packages
@@ -811,8 +609,8 @@ try {
     
     # Display connection instructions
     Write-Host "`nTo connect to the login node, you can use either of these methods:" -ForegroundColor Cyan
-    Write-Host "1. Using the 'make' command:" -ForegroundColor Yellow
-    Write-Host "   make login" -ForegroundColor White
+    Write-Host "1. From Git Bash in this directory:" -ForegroundColor Yellow
+    Write-Host "   make bash" -ForegroundColor White
     Write-Host "2. Using Docker directly:" -ForegroundColor Yellow
     Write-Host "   docker exec -it docker-scale-out-login-1 bash" -ForegroundColor White
     Write-Host "`nNote: The login node is accessible at:" -ForegroundColor Cyan
