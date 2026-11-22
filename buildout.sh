@@ -11,9 +11,21 @@ LOCAL_TIME="$(readlink -e /etc/localtime)"
 #https://github.com/jepsen-io/jepsen/issues/532#issuecomment-1128067136
 #with v2, each container gets a private cgroup namespace that startup.sh
 #remounts rw for systemd, independent of the daemon's default-cgroupns-mode
+#ask the daemon, since this script may not run on the docker host (e.g. Git Bash with Docker Desktop)
+CGROUP_VERSION="$(docker info --format '{{.CgroupVersion}}' 2>/dev/null)"
+if [ -z "$CGROUP_VERSION" ]; then
+	[ -f /sys/fs/cgroup/cgroup.controllers ] && CGROUP_VERSION=2 || CGROUP_VERSION=1
+fi
+#Docker Desktop's VM has a dangling /dev/log symlink, which can't be bind mounted
+DEVLOG_MOUNT="      - /dev/log:/dev/log"
+[ "$(docker info --format '{{.OperatingSystem}}' 2>/dev/null)" = "Docker Desktop" ] && DEVLOG_MOUNT=
+#for services whose only volume is /dev/log
+DEVLOG_VOLUMES=
+[ -n "$DEVLOG_MOUNT" ] && DEVLOG_VOLUMES="    volumes:
+$DEVLOG_MOUNT"
 CGROUPNS=
-[ -f /sys/fs/cgroup/cgroup.controllers ] && CGROUPNS="    cgroup: private"
-[ ! -f /sys/fs/cgroup/cgroup.controllers ] && SYSDFSMOUNTS="
+[ "$CGROUP_VERSION" = 2 ] && CGROUPNS="    cgroup: private"
+[ "$CGROUP_VERSION" != 2 ] && SYSDFSMOUNTS="
 ${LOCAL_TIME_MOUNT}
       - /run/
       - /run/lock/
@@ -624,7 +636,7 @@ cat <<EOF
       - SUBNET6="${SUBNET6}"
       - DEFAULT_SSHHOST=login
     volumes:
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
       - etc-ssh:/etc/shared-ssh
       - home:/home/
     networks:
@@ -644,14 +656,6 @@ $LOGGING
     environment:
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=user
-      - DOCKER_INFLUXDB_INIT_PASSWORD=password
-      - DOCKER_INFLUXDB_INIT_ORG=scaleout
-      - DOCKER_INFLUXDB_INIT_BUCKET=scaleout
-      - DOCKER_INFLUXDB_INIT_RETENTION=1w
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=token
-      - DOCKER_INFLUXDB_INIT_USER_ID=
       - INFLUXDB_DATA_QUERY_LOG_ENABLED=true
       - INFLUXDB_REPORTING_DISABLED=false
       - INFLUXDB_HTTP_LOG_ENABLED=true
@@ -661,8 +665,7 @@ $LOGGING
       memlock:
         soft: -1
         hard: -1
-    volumes:
-      - /dev/log:/dev/log
+${DEVLOG_VOLUMES}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.19
@@ -676,8 +679,7 @@ $LOGGING
     environment:
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
-    volumes:
-      - /dev/log:/dev/log
+${DEVLOG_VOLUMES}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.20
@@ -703,7 +705,7 @@ $LOGGING
         hard: -1
     volumes:
       - opensearch_data01:/usr/share/opensearch/data
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.15
@@ -729,7 +731,7 @@ $LOGGING
         hard: -1
     volumes:
       - opensearch_data02:/usr/share/opensearch/data
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.16
@@ -754,7 +756,7 @@ $LOGGING
         hard: -1
     volumes:
       - opensearch_data03:/usr/share/opensearch/data
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.17
@@ -762,8 +764,7 @@ $LOGGING
 $LOGGING
   kibana:
     image: docker.io/opensearchproject/opensearch-dashboards:3.10.0
-    volumes:
-      - /dev/log:/dev/log
+${DEVLOG_VOLUMES}
     environment:
       - SERVER_NAME=scaleout
       - 'OPENSEARCH_HOSTS=["http://es01:9200","http://es02:9200","http://es03:9200"]'
@@ -812,7 +813,7 @@ $HOSTLIST
         ipv6_address: ${SUBNET6}1:7
     volumes:
       - auth:/auth/
-      - /dev/log:/dev/log
+${DEVLOG_MOUNT}
 $LOGGING
 ${PROXY_PORTS}
     depends_on:

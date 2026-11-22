@@ -3,6 +3,10 @@
 # Add hosts in the not crazy slow manner
 cat /etc/hosts.nodes >>/etc/hosts
 
+#cgroup v1: Docker 25+ mounts the read-only /sys/fs/cgroup bind recursively, so make the controllers writable again for systemd
+[ ! -f /sys/fs/cgroup/cgroup.controllers ] && awk '$5 ~ "^/sys/fs/cgroup/." && / - cgroup2? / {print $5}' /proc/self/mountinfo |
+	xargs -r -n1 mount -o remount,bind,rw 2>/dev/null
+
 #ensure the systemd cgroup directory exists for enroot
 awk -F: '$2 ~ /systemd/ {printf "/sys/fs/cgroup/systemd/%s", $3}' /proc/self/cgroup |
 	xargs mkdir -p

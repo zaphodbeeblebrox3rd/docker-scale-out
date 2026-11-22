@@ -1,6 +1,13 @@
 #!/bin/bash
 #exec 1> >(logger -s -t influxdb-setup) 2>&1
 
+#set up here rather than with DOCKER_INFLUXDB_INIT_MODE: the entrypoint gives up if influxd
+#still answers 503 while running its startup migrations, so retry until setup is accepted
+until curl -s http://localhost:8086/api/v2/setup | grep -q '"allowed": *false'; do
+	influx setup -f -u user -p password -o scaleout -b scaleout -r 1w -t token >/dev/null 2>&1 ||
+		sleep 1
+done
+
 function pingit {
 	influx v1 auth list 1>&2
 
