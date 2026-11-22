@@ -19,6 +19,10 @@ fi
 #Docker Desktop's VM has a dangling /dev/log symlink, which can't be bind mounted
 DEVLOG_MOUNT="      - /dev/log:/dev/log"
 [ "$(docker info --format '{{.OperatingSystem}}' 2>/dev/null)" = "Docker Desktop" ] && DEVLOG_MOUNT=
+#for services whose only volume is /dev/log
+DEVLOG_VOLUMES=
+[ -n "$DEVLOG_MOUNT" ] && DEVLOG_VOLUMES="    volumes:
+$DEVLOG_MOUNT"
 CGROUPNS=
 [ "$CGROUP_VERSION" = 2 ] && CGROUPNS="    cgroup: private"
 [ "$CGROUP_VERSION" != 2 ] && SYSDFSMOUNTS="
@@ -669,8 +673,7 @@ $LOGGING
       memlock:
         soft: -1
         hard: -1
-    volumes:
-${DEVLOG_MOUNT}
+${DEVLOG_VOLUMES}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.19
@@ -684,8 +687,7 @@ $LOGGING
     environment:
       - SUBNET="${SUBNET}"
       - SUBNET6="${SUBNET6}"
-    volumes:
-${DEVLOG_MOUNT}
+${DEVLOG_VOLUMES}
     networks:
       internal:
         ipv4_address: ${SUBNET}.1.20
@@ -770,8 +772,7 @@ ${DEVLOG_MOUNT}
 $LOGGING
   kibana:
     image: docker.io/opensearchproject/opensearch-dashboards:3.10.0
-    volumes:
-${DEVLOG_MOUNT}
+${DEVLOG_VOLUMES}
     environment:
       - SERVER_NAME=scaleout
       - 'OPENSEARCH_HOSTS=["http://es01:9200","http://es02:9200","http://es03:9200"]'
