@@ -564,6 +564,21 @@ function Start-Build {
     Write-Host "`nContainer status:" -ForegroundColor Yellow
     docker compose ps -a --format "{{.Name}}: {{.Status}}"
 
+    # The containers can be up while Slurm is not, so only report success once a two-node job runs
+    Write-Host "`nWaiting for Slurm to run a two-node test job (up to 10 minutes)..." -ForegroundColor Yellow
+    $deadline = (Get-Date).AddMinutes(10)
+    do {
+        $jobOutput = docker compose exec -T login timeout 60 srun -N2 -t 1 hostname 2>&1
+        $slurmOk = $LASTEXITCODE -eq 0
+        if (-not $slurmOk) { Start-Sleep -Seconds 15 }
+    } until ($slurmOk -or (Get-Date) -gt $deadline)
+    if (-not $slurmOk) {
+        Write-Host ($jobOutput | Out-String) -ForegroundColor Red
+        throw "Slurm did not run a test job. Check 'docker compose logs mgmtnode' and 'docker compose exec login sinfo'."
+    }
+    Write-Host ($jobOutput | Out-String)
+    docker compose exec -T login sinfo
+
     Write-Host "Build and deployment completed successfully!" -ForegroundColor Green
 }
 
