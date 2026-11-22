@@ -48,6 +48,7 @@ It installs any missing prerequisites (Git for Windows with Git Bash, GNU make, 
 
 - [Architecture and services](docs/services.md): nodes, ports, REST API
 - [Operating the cluster](docs/operations.md): start, stop, shells, clean, save/load
+- [GPUs](docs/GPU.md): fake GPUs on every node, and a real one on `gpu01` when the host has one
 - [Customization](docs/customization.md): node lists, subnets, Slurm version, feature toggles, federation, cloud mode
 - [Building images](docs/building.md): submodules, rebuilds, test builds
 - [Troubleshooting](docs/troubleshooting.md): network overlaps, build failures, cgroup limits

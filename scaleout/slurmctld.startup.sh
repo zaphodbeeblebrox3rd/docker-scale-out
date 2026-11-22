@@ -31,7 +31,11 @@ if [ "${IS_MGT}${IS_FMGT}" != "" ]; then
 		cat /etc/nodelist | while read name cluster ip4 ip6; do
 			if [[ $cluster == "${SLURM_FEDERATION_CLUSTER}" ]]; then
 				[ ! -z "$ip6" ] && addr="$ip6" || addr="$ip4"
-				echo "NodeName=$name NodeAddr=$addr" >>/etc/slurm/nodes.conf
+				#a node with its own gres.conf lines (gpu01) gets those GPUs instead of the default fake ones
+				gres="$(awk -v node="NodeName=$name" '$1 == node && $2 == "Name=gpu" {
+					sub(/^Type=/, "", $3); n[$3]++
+				} END {for (t in n) printf "%sgpu:%s:%d", (s++ ? "," : ""), t, n[t]}' /etc/slurm/gres.conf)"
+				echo "NodeName=$name NodeAddr=$addr${gres:+ Gres=$gres}" >>/etc/slurm/nodes.conf
 			fi
 		done
 

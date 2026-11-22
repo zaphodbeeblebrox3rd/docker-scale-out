@@ -428,6 +428,12 @@ RUN mkdir -m 0755 -p /etc/slurm/
 COPY slurm/ /etc/slurm/
 ARG DISABLE_CLOUD_NODES
 RUN if [ "$DISABLE_CLOUD_NODES" ]; then sed -e '/^NodeName=cloud/d' -e '/^PartitionName=cloud/d' -i /etc/slurm/slurm.conf; fi
+#gpu01 gets the host's real GPUs; every other node keeps the fake ones
+ARG GPU_GRES
+RUN if [ "$GPU_GRES" ]; then \
+	sed -e "s/^Name=gpu /NodeName=$(awk '$1 != "gpu01" {print $1}' /etc/nodelist | paste -sd, -) Name=gpu /" -i /etc/slurm/gres.conf && \
+	for g in $GPU_GRES; do echo "NodeName=gpu01 Name=gpu Type=${g%%:*} File=${g#*:}" >>/etc/slurm/gres.conf; done; \
+	fi
 
 RUN test -s /etc/slurm/jwt.key || dd if=/dev/urandom bs=32 count=1 >/etc/slurm/jwt.key; \
 	chown slurm:slurm -R /etc/slurm/ &&\

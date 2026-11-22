@@ -24,7 +24,9 @@ if [ -z "$CGROUP_VERSION" ]; then
 fi
 #Docker Desktop's VM has a dangling /dev/log symlink, which can't be bind mounted
 DEVLOG_MOUNT="      - /dev/log:/dev/log"
-[ "$(docker info --format '{{.OperatingSystem}}' 2>/dev/null)" = "Docker Desktop" ] && DEVLOG_MOUNT=
+DOCKER_DESKTOP=
+[ "$(docker info --format '{{.OperatingSystem}}' 2>/dev/null)" = "Docker Desktop" ] && DOCKER_DESKTOP=1
+[ "$DOCKER_DESKTOP" ] && DEVLOG_MOUNT=
 #for services whose only volume is /dev/log
 DEVLOG_VOLUMES=
 [ -n "$DEVLOG_MOUNT" ] && DEVLOG_VOLUMES="    volumes:
@@ -136,6 +138,21 @@ if ([ ! -s "$NODELIST" ] || [ "$SLURM_BENCHMARK" ]); then
 		done >$NODELIST
 	fi
 fi
+
+#GPU: add a gpu01 node with the host's NVIDIA GPUs when Docker can pass them into containers
+#GPU_GRES lists type:device pairs; Docker Desktop passes every GPU through the one /dev/dxg device, so it counts one
+GPU_GRES=
+if [ -z "$DISABLE_GPU" ] && [ -z "$FEDERATION" ] && command -v nvidia-smi >/dev/null 2>&1 &&
+	docker info --format '{{json .Runtimes}}' 2>/dev/null | grep -q '"nvidia"'; then
+	GPU_GRES="$(nvidia-smi --query-gpu=index,name --format=csv,noheader 2>/dev/null | tr -d '\r' |
+		awk -F', ' -v dd="$DOCKER_DESKTOP" '{
+			t = tolower($2); sub(/^nvidia /, "", t); sub(/^geforce /, "", t); gsub(/[^a-z0-9]+/, "_", t)
+			printf "%s%s:%s", (NR > 1 ? " " : ""), t, (dd ? "/dev/dxg" : "/dev/nvidia" $1)
+			if (dd) exit
+		}')"
+fi
+sed -e '/^gpu01 /d' -i "$NODELIST"
+[ "$GPU_GRES" ] && echo "gpu01 cluster ${SUBNET}.5.9 ${SUBNET6}5:9" >>"$NODELIST"
 
 unlink scaleout/hosts.nodes
 cat "$NODELIST" | while read name cluster ip4 ip6; do
@@ -359,6 +376,7 @@ $HOSTLIST
         DISABLE_KEYCLOAK: "$DISABLE_KEYCLOAK"
         DISABLE_DEVELOPER: "$DISABLE_DEVELOPER"
         DISABLE_CLOUD_NODES: "$DISABLE_CLOUD_NODES"
+        GPU_GRES: "$GPU_GRES"
         CMAKE_BUILD_TYPE: "$CMAKE_BUILD_TYPE"
 ${BUILD_ARGS}
       network: host
@@ -557,6 +575,14 @@ cat "$NODELIST" | while read name cluster ip4 ip6; do
 	i6=
 	[ ! -z "$ip4" ] && i4="ipv4_address: $ip4"
 	[ ! -z "$ip6" ] && i6="ipv6_address: $ip6"
+	GPU_DEVICES=
+	[ "$name" = gpu01 ] && GPU_DEVICES="    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]"
 	cat <<EOF
   $name:
     image: scaleout:latest
@@ -589,6 +615,7 @@ $SYSDFSMOUNTS
       memlock:
         soft: -1
         hard: -1
+$GPU_DEVICES
 $LOGGING
     depends_on:
       - "$lastname"
