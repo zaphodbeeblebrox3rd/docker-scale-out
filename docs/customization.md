@@ -47,6 +47,7 @@ Set any of these before building to skip a component:
 | `DISABLE_PYXIS=1` | Do not build enroot and pyxis from source |
 | `DISABLE_GNU_PARALLEL=1` | Do not build GNU parallel from source (workaround when its mirror is down) |
 | `DISABLE_DEVELOPER=1` | Build Slurm and other sources in release mode instead of developer/debug mode |
+| `DISABLE_CLOUD_NODES=1` | Leave the `cloud` nodes and partition out of `slurm.conf`; always set on Windows |
 
 ## Federation mode
 
@@ -80,7 +81,7 @@ truncate -s0 scaleout/nodelist
 
 ## Cloud mode
 
-Cloud mode starts a monitor that scales `cloud` nodes up and down as Slurm resumes and suspends them. Linux only.
+Cloud mode starts a monitor that scales `cloud` nodes up and down as Slurm resumes and suspends them. Linux only: Windows builds leave the `cloud` nodes out of `slurm.conf`.
 
 ```bash
 make clean
