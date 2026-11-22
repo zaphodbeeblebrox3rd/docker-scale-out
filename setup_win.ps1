@@ -222,19 +222,20 @@ function Update-Submodules {
         # Some submodules (e.g. openapi-generator) contain paths longer than MAX_PATH
         git config --global core.longpaths true
         Write-Debug "Running git submodule update..."
+        # Keep Unix line endings and real symlinks (several sources build only with them); creating symlinks needs admin or Developer Mode
+        $checkoutConfig = @("-c", "core.autocrlf=false", "-c", "core.symlinks=true")
         $submoduleArgs = @("--init", "--force", "--recursive", "--checkout", "--depth", "1", "--recommend-shallow", "--single-branch", "--progress")
         # Slurm has src/conmgr/con.c; Windows 11 allows it but git rejects reserved device names unless core.protectNTFS is off
-        # Sources are built inside Linux containers, so never convert them to CRLF
-        git -c core.protectNTFS=false -c core.autocrlf=false submodule update @submoduleArgs -- scaleout/src/slurm
+        git -c core.protectNTFS=false @checkoutConfig submodule update @submoduleArgs -- scaleout/src/slurm
         if ($LASTEXITCODE -eq 0) { git -C scaleout/src/slurm config core.protectNTFS false }
-        git -c core.autocrlf=false submodule update @submoduleArgs
+        git @checkoutConfig submodule update @submoduleArgs
 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Error: Failed to update git submodules. Exit code: $LASTEXITCODE"
             throw "Git submodule update failed"
         }
-        # Keep LF for later checkouts too (make build checks out the requested Slurm release)
-        git submodule foreach --recursive --quiet "git config core.autocrlf false"
+        # Keep these settings for later checkouts (make build checks out the requested Slurm release), and recreate symlinks that earlier checkouts stored as plain files
+        git submodule foreach --recursive --quiet 'git config core.autocrlf false; git config core.symlinks true; if git ls-files -s | grep -q ^120000; then git ls-files -s | grep ^120000 | cut -f2 | git checkout -f --pathspec-from-file=-; fi'
         Write-Host "Git submodules updated successfully"
     }
     catch {
