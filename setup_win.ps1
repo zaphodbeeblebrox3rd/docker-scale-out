@@ -194,7 +194,11 @@ function Update-Submodules {
         # Some submodules (e.g. openapi-generator) contain paths longer than MAX_PATH
         git config --global core.longpaths true
         Write-Debug "Running git submodule update..."
-        git submodule update --init --force --recursive --checkout --depth 1 --recommend-shallow --single-branch --progress
+        $submoduleArgs = @("--init", "--force", "--recursive", "--checkout", "--depth", "1", "--recommend-shallow", "--single-branch", "--progress")
+        # Slurm has src/conmgr/con.c; Windows 11 allows it but git rejects reserved device names unless core.protectNTFS is off
+        git -c core.protectNTFS=false submodule update @submoduleArgs -- scaleout/src/slurm
+        if ($LASTEXITCODE -eq 0) { git -C scaleout/src/slurm config core.protectNTFS false }
+        git submodule update @submoduleArgs
 
         if ($LASTEXITCODE -ne 0) {
             Write-Error "Error: Failed to update git submodules. Exit code: $LASTEXITCODE"
